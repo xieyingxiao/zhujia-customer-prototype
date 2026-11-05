@@ -527,6 +527,10 @@ textarea.input{height:auto;min-height:88px;padding:10px 12px;resize:vertical;lin
           <button type="button" class="chip" onclick="clearQuickDate(this)">自定义</button>
         </div>
       </div>
+      <div class="form-group">
+        <label class="check-row"><input type="checkbox" id="fPause" onchange="togglePause(this.checked)" /><span class="check"></span><span class="check-text"><span>暂缓</span><span class="hint">勾选后阶段改为暂缓，并记下回访日。不勾选时，阶段和回访日保持不变。</span></span></label>
+      </div>
+      <div class="form-group" id="fReturnGroup"><label>回访日</label><input class="input" type="date" id="fReturn" /><div class="form-error">暂缓时请填写回访日</div></div>
     </div>
     <div class="modal-footer"><button class="btn btn-default" onclick="closeModal('followModal')">取消</button><button class="btn btn-primary" id="fSubmit" onclick="submitFollow()">保存</button></div>
   </div>
@@ -535,7 +539,10 @@ textarea.input{height:auto;min-height:88px;padding:10px 12px;resize:vertical;lin
 <div class="overlay" id="lostModal">
   <div class="modal" style="max-width:400px" role="dialog">
     <div class="modal-header"><h2>标为流失</h2><button class="modal-close" onclick="closeModal('lostModal')"><svg class="ico-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>
-    <div class="modal-body"><div class="confirm-body">确定将客户 <strong id="lostName"></strong> 标记为流失吗？标记后可在「流失」筛选中查看。</div></div>
+    <div class="modal-body">
+      <div class="confirm-body">确定将客户 <strong id="lostName"></strong> 标记为流失吗？标记后可在「流失」筛选中查看。</div>
+      <div class="form-group" id="lostReasonGroup" style="margin-top:12px"><label>流失原因 <span class="req">*</span></label><textarea class="input" id="lostReason" placeholder="请填写流失原因"></textarea><div class="form-error">请填写流失原因</div></div>
+    </div>
     <div class="modal-footer"><button class="btn btn-default" onclick="closeModal('lostModal')">取消</button><button class="btn btn-danger-solid" onclick="confirmLost()">确认流失</button></div>
   </div>
 </div>
@@ -548,6 +555,10 @@ textarea.input{height:auto;min-height:88px;padding:10px 12px;resize:vertical;lin
       <div class="form-group" id="reasonGroup">
         <label>不可服务 <span class="req">*</span></label>
         <div class="reason-grid" id="reasonGrid">
+          <button type="button" class="reason-chip" data-v="户型过小" onclick="pickReason(this)">户型过小</button>
+          <button type="button" class="reason-chip" data-v="预算过低" onclick="pickReason(this)">预算过低</button>
+          <button type="button" class="reason-chip" data-v="纯咨询" onclick="pickReason(this)">纯咨询</button>
+          <button type="button" class="reason-chip" data-v="旧房改造" onclick="pickReason(this)">旧房改造</button>
           <button type="button" class="reason-chip" data-v="超出服务半径" onclick="pickReason(this)">超出服务半径</button>
           <button type="button" class="reason-chip" data-v="其他" onclick="pickReason(this)">其他</button>
         </div>
@@ -566,8 +577,21 @@ textarea.input{height:auto;min-height:88px;padding:10px 12px;resize:vertical;lin
         <div class="dealer-list" id="dealerList"></div>
         <div class="form-error" id="dealerErr">请至少选择一位经销商</div>
       </div>
+      <div class="form-group">
+        <label class="check-row"><input type="checkbox" id="highBudget" /><span class="check"></span><span class="check-text"><span>预算较高</span><span class="hint">客户预算高于目前可服务的范围</span></span></label>
+      </div>
     </div>
     <div class="modal-footer"><button class="btn btn-default" onclick="closeModal('assignModal')">取消</button><button class="btn btn-primary" onclick="confirmAssign()">确定</button></div>
+  </div>
+</div>
+
+<div class="overlay" id="skipQuoteModal">
+  <div class="modal" style="max-width:440px" role="dialog">
+    <div class="modal-header"><h2>不做预报价</h2><button class="modal-close" onclick="closeModal('skipQuoteModal')"><svg class="ico-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>
+    <div class="modal-body">
+      <div class="form-group" id="skipReasonGroup"><label>原因 <span class="req">*</span></label><textarea class="input" id="skipReason" placeholder="请填写不做预报价的原因"></textarea><div class="form-error">请填写原因</div></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-default" onclick="closeModal('skipQuoteModal')">取消</button><button class="btn btn-primary" onclick="confirmSkipQuote()">确定</button></div>
   </div>
 </div>
 
@@ -581,6 +605,7 @@ textarea.input{height:auto;min-height:88px;padding:10px 12px;resize:vertical;lin
     <li>筛选改为标签页（全部/待跟进/已成交/流失）+ 搜索 + 分级/来源</li>
     <li>「意向」改为「分级」：列表、建档、详情顶部都显示；记跟进时可改分级</li>
     <li>详情增加关联项目，一个客户可挂多个项目</li>
+    <li>补上原页面能力：导出、阶段筛选、暂缓与回访日、流失原因、预报价「不做」、分发原因与预算较高</li>
     <li>操作列：记跟进 / 查看；空值「—」；空状态</li>
     <li>详情：上半信息加「服务类型」（自营/分发）；「记下跟进」主按钮；步骤条；时间线；预报价禁用原因留在接待进度</li>
     <li>分发：不可服务原因（超出服务半径/其他），分给经销商；确定后服务类型变分发并记入时间线</li>
@@ -618,7 +643,27 @@ let customers = [
   {id:'KH-2026-009',name:'冯雪',phone:'13800001009',wechat:'wx_fengxue',city:'苏州',source:'线下',channel:'自然到店/来电',intent:'B',status:'新线索',points:100,owner:'老板',serviceType:'自营',dealers:[],distributeReason:'',nextFollow:'2026-11-08 14:00',lastFollow:'2026-11-02 09:30',contactNote:'已通话',hasDrawing:false,reception:1,follows:[],visits:[],projects:[]},
   {id:'KH-2026-010',name:'韩磊',phone:'13800001010',wechat:'wx_hanlei',city:'昆明',source:'线上',channel:'抖音直播',intent:'C',status:'新线索',points:50,owner:'小李',serviceType:'分发',dealers:['昆明暖居'],distributeReason:'超出服务半径',nextFollow:'2026-11-06 18:00',lastFollow:null,contactNote:'',hasDrawing:false,reception:1,follows:[],visits:[],projects:[]}
 ];
-let state = {view:'list',detailId:null,filterTab:'全部',search:'',intentFilter:'',sourceFilter:'',sortKey:'nextFollow',sortDir:'asc',followTargetId:null,batchStep:1,listScroll:0};
+let state = {view:'list',detailId:null,filterTab:'全部',search:'',intentFilter:'',sourceFilter:'',stageFilter:'',sortKey:'nextFollow',sortDir:'asc',followTargetId:null,batchStep:1,listScroll:0};
+customers.forEach(c=>{
+  if(c.status==='已成交') c.boardStage='已成交';
+  else if(c.status==='已流失') c.boardStage='流失';
+  else if(c.serviceType==='分发') c.boardStage='已分发';
+  else c.boardStage='跟进中';
+  c.quote=c.reception>=6?'已发':'还没有';
+  c.quoteSkipReason=c.quoteSkipReason||'';
+  c.returnVisit=c.returnVisit||null;
+  c.lostReason=c.lostReason||'';
+  c.highBudget=!!c.highBudget;
+});
+function quoteText(c){
+  if(c.quote==='已发') return '已发';
+  if(c.quote==='不做') return '不做'+(c.quoteSkipReason?'：'+c.quoteSkipReason:'');
+  return '还没有';
+}
+function stageMark(c){
+  if(c.boardStage==='暂缓'||c.boardStage==='已分发') return `<span class="badge badge-stage-wait">${esc(c.boardStage)}</span>`;
+  return '';
+}
 const TODAY = '2026-11-05';
 
 function fmtPhone(p){if(!p)return '—';const s=String(p).replace(/\D/g,'');if(s.length===11)return s.slice(0,3)+' '+s.slice(3,7)+' '+s.slice(7);return p;}
@@ -700,6 +745,7 @@ function filtered(){
   if(state.search){const q=state.search.trim().toLowerCase();list=list.filter(c=>[c.name,c.phone,c.wechat,c.id,c.city].join(' ').toLowerCase().includes(q));}
   if(state.intentFilter)list=list.filter(c=>c.intent===state.intentFilter);
   if(state.sourceFilter)list=list.filter(c=>c.source===state.sourceFilter);
+  if(state.stageFilter)list=list.filter(c=>c.boardStage===state.stageFilter);
   const key=state.sortKey,dir=state.sortDir==='asc'?1:-1;
   list.sort((a,b)=>{
     let va=a[key],vb=b[key];
@@ -738,7 +784,7 @@ function renderList(){
       <td class="col-city" title="${esc(c.city)}">${esc(c.city)}</td>
       <td class="col-source"><span class="source-text" title="${esc(c.source)} · ${esc(c.channel)}">${esc(c.source)} · ${esc(c.channel)}</span></td>
       <td class="col-intent">${intentBadge(c.intent)}</td>
-      <td class="col-status">${statusBadge(c.status)}</td>
+      <td class="col-status">${statusBadge(c.status)} ${stageMark(c)}</td>
       <td class="col-next">${fmtNextFollow(c.nextFollow)}</td>
       <td class="col-last ${c.lastFollow?'date-normal':'date-empty'}">${fmtDate(c.lastFollow)}</td>
       <td class="col-pts">${c.points==null?'—':Number(c.points).toFixed(0)}</td>
@@ -749,7 +795,7 @@ function renderList(){
     </tr>`).join('');
   const cards=list.map(c=>`
     <div class="card" onclick="goDetail('${c.id}')">
-      <div class="card-top"><div class="card-name">${esc(c.name)} ${intentBadge(c.intent)}</div>${statusBadge(c.status)}</div>
+      <div class="card-top"><div class="card-name">${esc(c.name)} ${intentBadge(c.intent)}</div><div>${statusBadge(c.status)} ${stageMark(c)}</div></div>
       <div class="card-meta"><a href="tel:${c.phone}" onclick="event.stopPropagation()">${fmtPhone(c.phone)}</a><span>${esc(c.city)}</span><span>${esc(c.source)} · ${esc(c.channel)}</span></div>
       <div class="card-bottom"><span style="font-size:12px">下次跟进：${fmtNextFollow(c.nextFollow)}</span>
         <button class="btn btn-sm btn-primary" onclick="event.stopPropagation();openFollow('${c.id}')">记跟进</button></div>
@@ -761,6 +807,7 @@ function renderList(){
         <div class="toolbar-left">
           <button class="btn btn-primary" onclick="openCreate()">建档</button>
           <button class="btn btn-default" onclick="openBatch()">批量建档</button>
+          <button class="btn btn-default" onclick="exportCustomers()">导出</button>
           <button class="btn btn-icon" title="刷新" onclick="toast('已刷新')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg></button>
         </div>
         <div class="toolbar-right">
@@ -770,6 +817,7 @@ function renderList(){
             <button class="clear" onclick="onSearch('');document.getElementById('searchInput').value=''" aria-label="清除">${iconClose()}</button>
           </div>
           <select class="select" onchange="state.intentFilter=this.value;render()"><option value="">分级</option><option value="A" ${state.intentFilter==='A'?'selected':''}>A级</option><option value="B" ${state.intentFilter==='B'?'selected':''}>B级</option><option value="C" ${state.intentFilter==='C'?'selected':''}>C级</option></select>
+          <select class="select" onchange="state.stageFilter=this.value;render()"><option value="">阶段</option>${['跟进中','暂缓','已分发','已成交','流失'].map(s=>`<option value="${s}" ${state.stageFilter===s?'selected':''}>${s}</option>`).join('')}</select>
           <select class="select" onchange="state.sourceFilter=this.value;render()"><option value="">来源</option><option value="线上" ${state.sourceFilter==='线上'?'selected':''}>线上</option><option value="线下" ${state.sourceFilter==='线下'?'selected':''}>线下</option></select>
         </div>
       </div>
@@ -793,7 +841,16 @@ function renderList(){
 }
 function setFilterTab(t){state.filterTab=t;render()}
 function onSearch(v){state.search=v;render()}
-function clearFilters(){state.search='';state.intentFilter='';state.sourceFilter='';state.filterTab='全部';render()}
+function clearFilters(){state.search='';state.intentFilter='';state.sourceFilter='';state.stageFilter='';state.filterTab='全部';render()}
+function exportCustomers(){
+  const list=filtered();
+  const head=['编号','姓名','电话','微信','城市','来源','渠道','分级','跟进状态','阶段','下次跟进','最近跟进','积分'];
+  const lines=[head.join(',')].concat(list.map(c=>[c.id,c.name,c.phone,c.wechat,c.city,c.source,c.channel,gradeLabel(c.intent),c.status,c.boardStage,c.nextFollow||'',c.lastFollow||'',c.points==null?'':c.points].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')));
+  const blob=new Blob(['\ufeff'+lines.join('\n')],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='客户跟进.csv';a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+  toast('已导出 '+list.length+' 条');
+}
 function toggleSort(k){if(state.sortKey===k)state.sortDir=state.sortDir==='asc'?'desc':'asc';else{state.sortKey=k;state.sortDir='asc'}render();}
 
 const STEPS=['建档','首次联系','定意向','邀约到店','到店接待','预报价'];
@@ -808,13 +865,16 @@ function renderDetail(){
     else if(n === c.reception+1){cls='current';meta='当前';}
     else {cls='pending';meta='未开始';}
     if(cls==='done'&&n===2&&c.follows[0]){meta=`老板 · ${c.follows[0].time.slice(0,16)}`;}
-    if(cls==='current'){
-      if(n===3) action=`<div class="step-action"><button class="btn btn-sm btn-primary" onclick="completeIntentStep()">定意向</button></div>`;
-      if(n===4) action=`<div class="step-action"><button class="btn btn-sm btn-primary" onclick="toast('已记录邀约（演示）')">邀约</button></div>`;
-      if(n===5) action=`<div class="step-action"><button class="btn btn-sm btn-primary" onclick="toast('已记录到店（演示）')">到店</button></div>`;
-      if(n===6) action=`<div class="step-action"><button class="btn btn-sm btn-primary" ${c.hasDrawing?'':'disabled title="先上传图纸"'} onclick="toast('预算已发（演示）')">预算已发</button></div>`;
+    if(n===6 && c.quote==='不做'){meta='不做'+(c.quoteSkipReason?' · '+esc(c.quoteSkipReason):'');}
+    if(n>c.reception){
+      if(n===3) action=`<div class="step-action"><button class="btn btn-sm ${cls==='current'?'btn-primary':'btn-default'}" onclick="completeIntentStep()">定意向</button></div>`;
+      if(n===4) action=`<div class="step-action"><button class="btn btn-sm ${cls==='current'?'btn-primary':'btn-default'}" onclick="markReception(4,'已记录邀约')">邀约</button></div>`;
+      if(n===5) action=`<div class="step-action"><button class="btn btn-sm ${cls==='current'?'btn-primary':'btn-default'}" onclick="markVisit()">到店</button></div>`;
+      if(n===6 && c.quote!=='不做'){
+        const ready=c.hasDrawing && cls==='current';
+        action=`<div class="step-action"><button class="btn btn-sm btn-primary" ${ready?'':'disabled title="'+(c.hasDrawing?'先完成前面的接待':'先上传图纸')+'"'} onclick="markQuoteSent()">预算已发</button><button class="btn btn-sm btn-default" onclick="openSkipQuote()">不做</button></div>`;
+      }
     }
-    if(cls==='pending'&&n===6){action=`<div class="step-action"><button class="btn btn-sm btn-default" disabled title="先上传图纸">预算已发</button></div>`;}
     return `<div class="step ${cls}"><div class="num">${n}</div><div><div class="name">${name}</div><div class="meta">${meta}</div>${action}</div></div>`;
   }).join('');
   const timeline=c.follows.length?c.follows.map(f=>`
@@ -822,12 +882,13 @@ function renderDetail(){
       <div class="tl-head"><span class="tl-method">${esc(f.method)}</span><span class="tl-author">${esc(f.author)}</span><span class="tl-time">${esc(f.time)}</span></div>
       <div class="tl-body">${esc(f.content)}</div>
       ${f.gradeFrom!==undefined&&f.gradeFrom!==f.gradeTo?`<div class="tl-next">分级：${esc(gradeLabel(f.gradeFrom))} → ${esc(gradeLabel(f.gradeTo))}</div>`:''}
+      ${f.paused?`<div class="tl-next">暂缓${f.returnVisit?' · 回访日 '+esc(f.returnVisit):''}</div>`:''}
       ${f.next?`<div class="tl-next">约定下次：${esc(f.next)}</div>`:''}
     </div>`).join(''):`<div class="empty" style="padding:24px"><h3>还没有跟进记录</h3><p>记下第一条跟进，方便同事接手</p><button class="btn btn-primary btn-sm" onclick="openFollow()">记下跟进</button></div>`;
   document.getElementById('content').innerHTML=`
     <div class="panel"><div class="panel-body">
       <div class="detail-header">
-        <div><div class="detail-title"><h1>${esc(c.name)}</h1><div class="detail-tags">${statusBadge(c.status)}${intentBadge(c.intent)}</div></div>
+        <div><div class="detail-title"><h1>${esc(c.name)}</h1><div class="detail-tags">${statusBadge(c.status)}${stageMark(c)}${intentBadge(c.intent)}</div></div>
           <div class="detail-id">${c.id} · 负责人 ${esc(c.owner||'—')}</div></div>
         <div class="detail-actions">
           <button class="btn btn-default" onclick="goList()">返回客户</button>
@@ -848,7 +909,13 @@ function renderDetail(){
         <div class="info-item"><label>城市</label><div class="val">${esc(c.city)}</div></div>
         <div class="info-item"><label>来源 · 渠道</label><div class="val">${esc(c.source)} · ${esc(c.channel)}</div></div>
         <div class="info-item"><label>服务类型</label><div class="val" style="display:flex;align-items:center;flex-wrap:wrap;gap:4px">${serviceBadge(c)}</div></div>
+        <div class="info-item"><label>阶段</label><div class="val">${esc(c.boardStage||'—')}</div></div>
+        <div class="info-item"><label>积分</label><div class="val">${c.points==null?'—':Number(c.points).toFixed(2)}</div></div>
+        <div class="info-item"><label>联系</label><div class="val">${esc(c.contactNote||'—')}</div></div>
+        <div class="info-item"><label>预报价</label><div class="val">${esc(quoteText(c))}</div></div>
         <div class="info-item"><label>下次跟进</label><div class="val">${fmtNextFollow(c.nextFollow)}</div></div>
+        ${c.returnVisit?`<div class="info-item"><label>回访日</label><div class="val">${esc(c.returnVisit)}</div></div>`:''}
+        ${c.lostReason?`<div class="info-item"><label>流失原因</label><div class="val">${esc(c.lostReason)}</div></div>`:''}
       </div>
       <div class="section"><div class="section-title">关联项目 <span style="font-weight:400;color:var(--text-muted);font-size:12px">${(c.projects||[]).length}</span></div>${projectHtml(c)}</div>
       <div class="section"><div class="section-title">接待进度 <span style="font-weight:400;color:var(--text-muted);font-size:12px">${Math.min(c.reception,6)}/6</span></div><div class="steps">${stepsHtml}</div></div>
@@ -856,7 +923,7 @@ function renderDetail(){
         <div>
           <div class="section"><div class="section-title">图纸</div>
             <div class="drawing-box"><p>${c.hasDrawing?'已上传户型图。':'还没有户型图或施工图。预报价之前要先传一张。'}</p>
-              <button class="btn btn-default" onclick="toast('上传图纸（演示）')">上传图纸</button></div>
+              <button class="btn btn-default" onclick="uploadDrawing()">上传图纸</button></div>
             ${!c.hasDrawing?`<p style="font-size:12px;color:var(--text-muted);margin-top:8px">「预算已发」按钮在上传图纸前不可用。</p>`:''}
           </div>
           <div class="section"><div class="section-title">到店记录</div>
@@ -880,11 +947,15 @@ function openFollow(id){
   document.getElementById('fContentGroup').classList.remove('has-error');
   document.querySelectorAll('#fMethod button').forEach((b,i)=>b.classList.toggle('active',i===0));
   document.querySelectorAll('#fGrade button').forEach(b=>b.classList.toggle('active',b.dataset.v===(c.intent||'')));
+  document.getElementById('fPause').checked=false;
+  document.getElementById('fReturn').value='';
+  document.getElementById('fReturnGroup').classList.remove('has-error');
   document.querySelectorAll('.quick-dates .chip').forEach(c=>c.classList.remove('active'));
   openModal('followModal');
 }
 function setMethod(btn){document.querySelectorAll('#fMethod button').forEach(b=>b.classList.remove('active'));btn.classList.add('active');}
 function setGrade(btn){document.querySelectorAll('#fGrade button').forEach(b=>b.classList.remove('active'));btn.classList.add('active');}
+function togglePause(){document.getElementById('fReturnGroup').classList.remove('has-error');}
 function setQuickDate(days,btn){
   document.querySelectorAll('.quick-dates .chip').forEach(c=>c.classList.remove('active'));btn.classList.add('active');
   const d=new Date(TODAY+'T10:00:00');d.setDate(d.getDate()+days);
@@ -895,7 +966,12 @@ function clearQuickDate(btn){document.querySelectorAll('.quick-dates .chip').for
 function submitFollow(){
   const content=document.getElementById('fContent').value.trim();
   const group=document.getElementById('fContentGroup');
-  if(!content){group.classList.add('has-error');return}group.classList.remove('has-error');
+  const pause=document.getElementById('fPause').checked;
+  const returnDay=document.getElementById('fReturn').value;
+  const returnGroup=document.getElementById('fReturnGroup');
+  if(!content){group.classList.add('has-error');}else group.classList.remove('has-error');
+  if(pause && !returnDay){returnGroup.classList.add('has-error');}else returnGroup.classList.remove('has-error');
+  if(!content || (pause && !returnDay)) return;
   const btn=document.getElementById('fSubmit');btn.disabled=true;btn.innerHTML='<span class="spin"></span> 保存中';
   setTimeout(()=>{
     const c=customers.find(x=>x.id===state.followTargetId);
@@ -905,8 +981,9 @@ function submitFollow(){
     const nextRaw=document.getElementById('fNext').value;
     const next=nextRaw?nextRaw.replace('T',' '):null;
     const now='2026-11-05 '+new Date().toTimeString().slice(0,5);
-    c.follows.unshift({method,content,time:now,author:'老板',next,gradeFrom,gradeTo:grade});
+    c.follows.unshift({method,content,time:now,author:'老板',next,gradeFrom,gradeTo:grade,paused:pause,returnVisit:pause?returnDay:null});
     if(grade!==gradeFrom){c.intent=grade;c.points=Object.prototype.hasOwnProperty.call(GRADE_POINTS,grade)?GRADE_POINTS[grade]:null;}
+    if(pause && c.boardStage!=='已成交' && c.boardStage!=='流失'){c.boardStage='暂缓';c.returnVisit=returnDay;}
     c.lastFollow=now;if(next)c.nextFollow=next;
     if(c.status==='新线索')c.status='已联系';if(c.reception<2)c.reception=2;
     if(!c.contactNote)c.contactNote=method==='电话'?'已通话':method==='微信'?'已加微信':'已联系';
@@ -955,7 +1032,7 @@ function submitCreate(){
   const intent=document.getElementById('cIntent').value;
   const n=customers.length+1;const id='KH-2026-'+String(n).padStart(3,'0');
   const points=Object.prototype.hasOwnProperty.call(GRADE_POINTS,intent)?GRADE_POINTS[intent]:null;
-  customers.unshift({id,name,phone:phone||'',wechat,city,source,channel,intent,status:'新线索',points,owner:'老板',serviceType:'自营',dealers:[],distributeReason:'',nextFollow:null,lastFollow:null,contactNote:'',hasDrawing:false,reception:1,follows:[],visits:[],projects:[]});
+  customers.unshift({id,name,phone:phone||'',wechat,city,source,channel,intent,status:'新线索',points,owner:'老板',serviceType:'自营',dealers:[],distributeReason:'',nextFollow:null,lastFollow:null,contactNote:'',hasDrawing:false,reception:1,follows:[],visits:[],projects:[],boardStage:'跟进中',quote:'还没有',quoteSkipReason:'',returnVisit:null,lostReason:'',highBudget:false});
   closeModal('createModal');toast('建档成功：'+name);state.filterTab='全部';state.search='';render();
 }
 function openBatch(){state.batchStep=1;updateBatchUI();openModal('batchModal');}
@@ -969,13 +1046,63 @@ function batchNext(){if(state.batchStep===1){state.batchStep=2;updateBatchUI();}
 function batchPrev(){if(state.batchStep>1){state.batchStep--;updateBatchUI();}}
 function downloadTemplate(){toast('模板已下载（演示）');state.batchStep=2;updateBatchUI();}
 function simulateUpload(){toast('已选择 建档导入.xlsx');}
-function openLost(){const c=customers.find(x=>x.id===state.detailId);document.getElementById('lostName').textContent=c.name;openModal('lostModal');}
-function confirmLost(){const c=customers.find(x=>x.id===state.detailId);c.status='已流失';c.nextFollow=null;closeModal('lostModal');toast('已标记为流失');render();}
-function completeIntentStep(){
+function openLost(){
+  const c=customers.find(x=>x.id===state.detailId);if(!c)return;
+  document.getElementById('lostName').textContent=c.name;
+  document.getElementById('lostReason').value='';
+  document.getElementById('lostReasonGroup').classList.remove('has-error');
+  openModal('lostModal');
+}
+function confirmLost(){
+  const reason=document.getElementById('lostReason').value.trim();
+  const group=document.getElementById('lostReasonGroup');
+  if(!reason){group.classList.add('has-error');return}
+  group.classList.remove('has-error');
   const c=customers.find(x=>x.id===state.detailId);
-  if(c && c.reception<3) c.reception=3;
-  toast('已定意向（演示）');
-  render();
+  c.status='已流失';c.boardStage='流失';c.lostReason=reason;c.nextFollow=null;
+  closeModal('lostModal');toast('已标记为流失');render();
+}
+function advanceReception(n){
+  const c=customers.find(x=>x.id===state.detailId);if(!c)return null;
+  if(c.reception!==n-1){toast('请先完成上一步接待');return null;}
+  c.reception=n;return c;
+}
+function completeIntentStep(){
+  const c=advanceReception(3);if(!c)return;
+  toast('已定意向');render();
+}
+function markReception(n,msg){
+  const c=advanceReception(n);if(!c)return;
+  toast(msg);render();
+}
+function markVisit(){
+  const c=advanceReception(5);if(!c)return;
+  c.visits.unshift({time:TODAY,note:'到店接待'});
+  toast('已记录到店');render();
+}
+function uploadDrawing(){
+  const c=customers.find(x=>x.id===state.detailId);if(!c)return;
+  c.hasDrawing=true;toast('图纸已上传');render();
+}
+function markQuoteSent(){
+  const c=customers.find(x=>x.id===state.detailId);if(!c)return;
+  if(!c.hasDrawing){toast('先上传图纸');return;}
+  if(!advanceReception(6))return;
+  c.quote='已发';c.quoteSkipReason='';
+  toast('预算已发');render();
+}
+function openSkipQuote(){
+  document.getElementById('skipReason').value='';
+  document.getElementById('skipReasonGroup').classList.remove('has-error');
+  openModal('skipQuoteModal');
+}
+function confirmSkipQuote(){
+  const reason=document.getElementById('skipReason').value.trim();
+  const group=document.getElementById('skipReasonGroup');
+  if(!reason){group.classList.add('has-error');return}
+  const c=customers.find(x=>x.id===state.detailId);if(!c)return;
+  c.quote='不做';c.quoteSkipReason=reason;
+  closeModal('skipQuoteModal');toast('已标记不做预报价');render();
 }
 const DEALER_PRESET=[
   {name:'重庆优家装饰',city:'重庆'},
@@ -991,6 +1118,7 @@ function openAssign(){
   document.querySelectorAll('#reasonGrid .reason-chip').forEach(b=>b.classList.remove('active'));
   document.getElementById('reasonOtherWrap').style.display='none';
   document.getElementById('reasonOther').value='';
+  const budget=document.getElementById('highBudget');if(budget)budget.checked=false;
   document.getElementById('dealerInput').value='';
   document.getElementById('reasonGroup').classList.remove('has-error');
   document.getElementById('dealerGroup').classList.remove('has-error');
@@ -1087,11 +1215,13 @@ function confirmAssign(){
   c.serviceType='分发';
   c.dealers=assignState.dealers.slice();
   c.distributeReason=reasonText;
+  c.highBudget=document.getElementById('highBudget').checked;
+  if(c.boardStage!=='已成交' && c.boardStage!=='流失') c.boardStage='已分发';
   const now='2026-11-05 '+new Date().toTimeString().slice(0,5);
   const dealerStr=c.dealers.join('、');
   c.follows.unshift({
     method:'其他',
-    content:`已分发：原因「${reasonText}」· 经销商 ${dealerStr}`,
+    content:`已分发：原因「${reasonText}」· 经销商 ${dealerStr}${c.highBudget?' · 预算较高':''}`,
     time:now, author:'老板', next:null
   });
   c.lastFollow=now;
