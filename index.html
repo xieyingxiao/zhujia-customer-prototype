@@ -382,6 +382,17 @@ textarea.input{height:auto;min-height:88px;padding:10px 12px;resize:vertical;lin
 .info-grid-5{display:grid;grid-template-columns:repeat(6,1fr);gap:16px;padding:16px;background:var(--bg);border-radius:8px;margin-bottom:20px}
 @media(max-width:1100px){.info-grid-5{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:768px){.info-grid-5{grid-template-columns:1fr 1fr}}
+.project-list{display:flex;flex-direction:column;gap:8px}
+.project-card{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:12px 14px;background:var(--bg);border:1px solid var(--border);border-radius:8px;text-align:left;width:100%;cursor:pointer}
+.project-card:hover{border-color:var(--primary-border);background:#fff}
+.project-name{font-size:14px;font-weight:600;color:var(--text)}
+.project-id{font-size:12px;color:var(--text-muted);font-weight:400;margin-left:8px}
+.project-meta{font-size:12px;color:var(--text-secondary);margin-top:4px;line-height:1.5}
+.project-side{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0}
+.badge-stage{background:#eff6ff;color:#1d4ed8;border-color:#bfdbfe}
+.badge-stage-wait{background:#fff7ed;color:#c2410c;border-color:#fed7aa}
+.badge-stage-done{background:#f0fdf4;color:#15803d;border-color:#bbf7d0}
+.empty-inline{padding:20px;text-align:center;color:var(--text-muted);font-size:13px;background:var(--bg);border-radius:8px}
 </style>
 </head>
 <body>
@@ -427,7 +438,7 @@ textarea.input{height:auto;min-height:88px;padding:10px 12px;resize:vertical;lin
         <div class="form-group" id="cPhoneGroup"><label>电话</label><input class="input" id="cPhone" placeholder="11位手机号" maxlength="11" inputmode="numeric" /><div class="form-error" id="cPhoneErr"></div></div>
         <div class="form-group" id="cWxGroup"><label>微信</label><input class="input" id="cWx" placeholder="微信号" /><div class="form-error" id="cWxErr"></div></div>
       </div>
-      <div class="form-hint" style="margin-top:-8px;margin-bottom:12px">电话或微信至少填一个；姓名和意向可后补。</div>
+      <div class="form-hint" style="margin-top:-8px;margin-bottom:12px">电话或微信至少填一个；姓名和分级可后补。</div>
       <div class="dup-warn" id="cDupWarn">已有客户 <a href="javascript:;" id="cDupLink"></a>，请勿重复建档。</div>
       <div class="form-row">
         <div class="form-group"><label>城市</label><input class="input" id="cCity" placeholder="所在城市" /></div>
@@ -440,8 +451,8 @@ textarea.input{height:auto;min-height:88px;padding:10px 12px;resize:vertical;lin
           <div class="auto-tag" id="cSourceTag" style="display:none">来源将自动带出：<strong id="cSourceVal"></strong></div>
         </div>
       </div>
-      <div class="form-group"><label>意向 <span class="hint">可后补</span></label>
-        <select class="input select" id="cIntent" style="width:100%"><option value="">可后补</option><option value="A">A</option><option value="B">B</option><option value="C">C</option></select>
+      <div class="form-group"><label>分级 <span class="hint">可后补</span></label>
+        <select class="input select" id="cIntent" style="width:100%"><option value="">可后补</option><option value="A">A级</option><option value="B">B级</option><option value="C">C级</option></select>
       </div>
     </div>
     <div class="modal-footer"><button class="btn btn-default" onclick="closeModal('createModal')">取消</button><button class="btn btn-primary" id="cSubmit" onclick="submitCreate()">确定</button></div>
@@ -497,6 +508,14 @@ textarea.input{height:auto;min-height:88px;padding:10px 12px;resize:vertical;lin
           <button type="button" data-v="微信" onclick="setMethod(this)">微信</button>
           <button type="button" data-v="到店" onclick="setMethod(this)">到店</button>
           <button type="button" data-v="其他" onclick="setMethod(this)">其他</button>
+        </div>
+      </div>
+      <div class="form-group"><label>分级</label>
+        <div class="segment" id="fGrade">
+          <button type="button" data-v="" onclick="setGrade(this)">未分级</button>
+          <button type="button" data-v="A" onclick="setGrade(this)">A级</button>
+          <button type="button" data-v="B" onclick="setGrade(this)">B级</button>
+          <button type="button" data-v="C" onclick="setGrade(this)">C级</button>
         </div>
       </div>
       <div class="form-group" id="fContentGroup"><label>跟进内容 <span class="req">*</span></label><textarea class="input" id="fContent" placeholder="记录本次沟通要点、客户反馈…"></textarea><div class="form-error">请填写跟进内容</div></div>
@@ -559,7 +578,9 @@ textarea.input{height:auto;min-height:88px;padding:10px 12px;resize:vertical;lin
     <li>电话/微信不换行，号码分段，可复制</li>
     <li>新增「下次/最近跟进」，过期红、今天橙，默认可排序</li>
     <li>状态列合并：以跟进状态为主（新线索/已联系/已成交/已流失）；原「看板阶段·跟进中」并入接待步骤条，列表不再重复；「一级」改「来源」并与渠道合并显示</li>
-    <li>筛选改为标签页（全部/待跟进/已成交/流失）+ 搜索 + 意向/来源</li>
+    <li>筛选改为标签页（全部/待跟进/已成交/流失）+ 搜索 + 分级/来源</li>
+    <li>「意向」改为「分级」：列表、建档、详情顶部都显示；记跟进时可改分级</li>
+    <li>详情增加关联项目，一个客户可挂多个项目</li>
     <li>操作列：记跟进 / 查看；空值「—」；空状态</li>
     <li>详情：上半信息加「服务类型」（自营/分发）；「记下跟进」主按钮；步骤条；时间线；预报价禁用原因留在接待进度</li>
     <li>分发：不可服务原因（超出服务半径/其他），分给经销商；确定后服务类型变分发并记入时间线</li>
@@ -581,24 +602,49 @@ let customers = [
     follows:[
       {method:'微信',content:'已通话，已加微信。客户表示周末有空，可约到店看样板。',time:'2026-11-04 17:57',author:'老板',next:'2026-11-05 10:00'},
       {method:'电话',content:'首次外呼接通，介绍了住家研选服务，客户有装修意向，约微信详聊。',time:'2026-11-04 15:20',author:'老板',next:null}
-    ], visits:[]},
-  {id:'KH-2026-002',name:'林晓',phone:'13800001002',wechat:'wx_linxiao',city:'成都',source:'线上',channel:'抖音视频',intent:'B',status:'已成交',points:100,owner:'老板',serviceType:'自营',dealers:[],distributeReason:'',nextFollow:null,lastFollow:'2026-10-28 14:00',contactNote:'已通话 · 已加微信',hasDrawing:true,reception:6,follows:[{method:'到店',content:'签约完成，进入施工排期。',time:'2026-10-28 14:00',author:'老板',next:null}],visits:[{time:'2026-10-20',note:'到店看样板间'}]},
-  {id:'KH-2026-003',name:'赵敏',phone:'13800001003',wechat:'wx_zhaomin',city:'杭州',source:'线上',channel:'小红书视频',intent:'C',status:'新线索',points:50,owner:'老板',serviceType:'自营',dealers:[],distributeReason:'',nextFollow:'2026-11-05 15:00',lastFollow:null,contactNote:'',hasDrawing:false,reception:1,follows:[],visits:[]},
-  {id:'KH-2026-004',name:'周凯',phone:'13800001004',wechat:'wx_zhoukai',city:'武汉',source:'线上',channel:'视频号',intent:'A',status:'新线索',points:150,owner:'小王',serviceType:'分发',dealers:['武汉邻里装'],distributeReason:'超出服务半径',nextFollow:'2026-11-06 09:30',lastFollow:null,contactNote:'',hasDrawing:false,reception:1,follows:[],visits:[]},
-  {id:'KH-2026-005',name:'吴婷',phone:'13800001005',wechat:'wx_wuting',city:'西安',source:'线上',channel:'豆包',intent:'B',status:'已成交',points:100,owner:'老板',serviceType:'自营',dealers:[],distributeReason:'',nextFollow:null,lastFollow:'2026-10-15 11:00',contactNote:'已通话 · 已加微信',hasDrawing:true,reception:6,follows:[],visits:[]},
-  {id:'KH-2026-006',name:'郑浩',phone:'13800001006',wechat:'wx_zhenghao',city:'南京',source:'线下',channel:'老客户转介绍',intent:'C',status:'新线索',points:50,owner:'小李',serviceType:'自营',dealers:[],distributeReason:'',nextFollow:'2026-11-03 16:00',lastFollow:null,contactNote:'',hasDrawing:false,reception:1,follows:[],visits:[]},
-  {id:'KH-2026-007',name:'孙莉',phone:'13800001007',wechat:'wx_sunli',city:'长沙',source:'线下',channel:'设计师/前端合作',intent:'',status:'新线索',points:null,owner:'老板',serviceType:'自营',dealers:[],distributeReason:'',nextFollow:'2026-11-07 10:00',lastFollow:null,contactNote:'',hasDrawing:false,reception:1,follows:[],visits:[]},
-  {id:'KH-2026-008',name:'钱程',phone:'13800001008',wechat:'wx_qiancheng',city:'青岛',source:'线下',channel:'同行异业',intent:'A',status:'新线索',points:150,owner:'小王',serviceType:'分发',dealers:['青岛海纳家居'],distributeReason:'其他',nextFollow:'2026-11-05 11:00',lastFollow:null,contactNote:'',hasDrawing:false,reception:1,follows:[],visits:[]},
-  {id:'KH-2026-009',name:'冯雪',phone:'13800001009',wechat:'wx_fengxue',city:'苏州',source:'线下',channel:'自然到店/来电',intent:'B',status:'新线索',points:100,owner:'老板',serviceType:'自营',dealers:[],distributeReason:'',nextFollow:'2026-11-08 14:00',lastFollow:'2026-11-02 09:30',contactNote:'已通话',hasDrawing:false,reception:1,follows:[],visits:[]},
-  {id:'KH-2026-010',name:'韩磊',phone:'13800001010',wechat:'wx_hanlei',city:'昆明',source:'线上',channel:'抖音直播',intent:'C',status:'新线索',points:50,owner:'小李',serviceType:'分发',dealers:['昆明暖居'],distributeReason:'超出服务半径',nextFollow:'2026-11-06 18:00',lastFollow:null,contactNote:'',hasDrawing:false,reception:1,follows:[],visits:[]}
+    ], visits:[], projects:[]},
+  {id:'KH-2026-002',name:'林晓',phone:'13800001002',wechat:'wx_linxiao',city:'成都',source:'线上',channel:'抖音视频',intent:'B',status:'已成交',points:100,owner:'老板',serviceType:'自营',dealers:[],distributeReason:'',nextFollow:null,lastFollow:'2026-10-28 14:00',contactNote:'已通话 · 已加微信',hasDrawing:true,reception:6,follows:[{method:'到店',content:'签约完成，进入施工排期。',time:'2026-10-28 14:00',author:'老板',next:null}],visits:[{time:'2026-10-20',note:'到店看样板间'}],
+    projects:[
+      {id:'XM-2026-018',name:'林晓 · 麓山全屋',community:'麓山国际',room:'3-1-1802',layout:'三室两厅',budget:'28.6万',stage:'安装中',owner:'老板'},
+      {id:'XM-2026-027',name:'林晓 · 次卧加柜',community:'麓山国际',room:'3-1-1802',layout:'次卧',budget:'2.4万',stage:'平面待确认',owner:'老板'}
+    ]},
+  {id:'KH-2026-003',name:'赵敏',phone:'13800001003',wechat:'wx_zhaomin',city:'杭州',source:'线上',channel:'小红书视频',intent:'C',status:'新线索',points:50,owner:'老板',serviceType:'自营',dealers:[],distributeReason:'',nextFollow:'2026-11-05 15:00',lastFollow:null,contactNote:'',hasDrawing:false,reception:1,follows:[],visits:[],projects:[]},
+  {id:'KH-2026-004',name:'周凯',phone:'13800001004',wechat:'wx_zhoukai',city:'武汉',source:'线上',channel:'视频号',intent:'A',status:'新线索',points:150,owner:'小王',serviceType:'分发',dealers:['武汉邻里装'],distributeReason:'超出服务半径',nextFollow:'2026-11-06 09:30',lastFollow:null,contactNote:'',hasDrawing:false,reception:1,follows:[],visits:[],projects:[]},
+  {id:'KH-2026-005',name:'吴婷',phone:'13800001005',wechat:'wx_wuting',city:'西安',source:'线上',channel:'豆包',intent:'B',status:'已成交',points:100,owner:'老板',serviceType:'自营',dealers:[],distributeReason:'',nextFollow:null,lastFollow:'2026-10-15 11:00',contactNote:'已通话 · 已加微信',hasDrawing:true,reception:6,follows:[],visits:[],
+    projects:[{id:'XM-2026-009',name:'吴婷 · 曲江定制',community:'曲江公馆',room:'7-2-901',layout:'两室一厅',budget:'16.8万',stage:'已验收',owner:'老板'}]},
+  {id:'KH-2026-006',name:'郑浩',phone:'13800001006',wechat:'wx_zhenghao',city:'南京',source:'线下',channel:'老客户转介绍',intent:'C',status:'新线索',points:50,owner:'小李',serviceType:'自营',dealers:[],distributeReason:'',nextFollow:'2026-11-03 16:00',lastFollow:null,contactNote:'',hasDrawing:false,reception:1,follows:[],visits:[],projects:[]},
+  {id:'KH-2026-007',name:'孙莉',phone:'13800001007',wechat:'wx_sunli',city:'长沙',source:'线下',channel:'设计师/前端合作',intent:'',status:'新线索',points:null,owner:'老板',serviceType:'自营',dealers:[],distributeReason:'',nextFollow:'2026-11-07 10:00',lastFollow:null,contactNote:'',hasDrawing:false,reception:1,follows:[],visits:[],projects:[]},
+  {id:'KH-2026-008',name:'钱程',phone:'13800001008',wechat:'wx_qiancheng',city:'青岛',source:'线下',channel:'同行异业',intent:'A',status:'新线索',points:150,owner:'小王',serviceType:'分发',dealers:['青岛海纳家居'],distributeReason:'其他',nextFollow:'2026-11-05 11:00',lastFollow:null,contactNote:'',hasDrawing:false,reception:1,follows:[],visits:[],projects:[]},
+  {id:'KH-2026-009',name:'冯雪',phone:'13800001009',wechat:'wx_fengxue',city:'苏州',source:'线下',channel:'自然到店/来电',intent:'B',status:'新线索',points:100,owner:'老板',serviceType:'自营',dealers:[],distributeReason:'',nextFollow:'2026-11-08 14:00',lastFollow:'2026-11-02 09:30',contactNote:'已通话',hasDrawing:false,reception:1,follows:[],visits:[],projects:[]},
+  {id:'KH-2026-010',name:'韩磊',phone:'13800001010',wechat:'wx_hanlei',city:'昆明',source:'线上',channel:'抖音直播',intent:'C',status:'新线索',points:50,owner:'小李',serviceType:'分发',dealers:['昆明暖居'],distributeReason:'超出服务半径',nextFollow:'2026-11-06 18:00',lastFollow:null,contactNote:'',hasDrawing:false,reception:1,follows:[],visits:[],projects:[]}
 ];
 let state = {view:'list',detailId:null,filterTab:'全部',search:'',intentFilter:'',sourceFilter:'',sortKey:'nextFollow',sortDir:'asc',followTargetId:null,batchStep:1,listScroll:0};
 const TODAY = '2026-11-05';
 
 function fmtPhone(p){if(!p)return '—';const s=String(p).replace(/\D/g,'');if(s.length===11)return s.slice(0,3)+' '+s.slice(3,7)+' '+s.slice(7);return p;}
 function esc(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
-function intentBadge(i){if(!i)return '<span class="badge badge-intent-none">无意向</span>';return `<span class="badge badge-intent-${i}">意向 ${i}</span>`;}
+function gradeLabel(i){return i?i+'级':'未分级';}
+function intentBadge(i){if(!i)return '<span class="badge badge-intent-none">未分级</span>';return `<span class="badge badge-intent-${i}">${i}级</span>`;}
+const GRADE_POINTS={A:150,B:100,C:50};
+function stageBadge(s){
+  const done=['已验收','已安装','已签字','已下单'];
+  const wait=['平面待确认','立面待确认','内部结构待确认','最终稿/报价单待签字','待安装','待验收','已签约'];
+  const cls=done.includes(s)?'badge-stage-done':wait.includes(s)?'badge-stage-wait':'badge-stage';
+  return `<span class="badge ${cls}">${esc(s)}</span>`;
+}
 function statusBadge(s){return `<span class="badge badge-status-${s}">${s}</span>`;}
+function projectHtml(c){
+  const list=c.projects||[];
+  if(!list.length) return '<div class="empty-inline">还没有关联项目。成交后会在这里看到这个客户的房子和合同。</div>';
+  return `<div class="project-list">${list.map(p=>`
+    <button type="button" class="project-card" onclick="toast('项目详情暂为演示：${esc(p.name)}')">
+      <div>
+        <div class="project-name">${esc(p.name)}<span class="project-id">${esc(p.id)}</span></div>
+        <div class="project-meta">${esc(p.community)} ${esc(p.room)} · ${esc(p.layout)} · 预算 ${esc(p.budget)} · 负责人 ${esc(p.owner)}</div>
+      </div>
+      <div class="project-side">${stageBadge(p.stage)}</div>
+    </button>`).join('')}</div>`;
+}
 function serviceBadge(c){
   const typ=c.serviceType||'自营';
   let meta='';
@@ -723,7 +769,7 @@ function renderList(){
             <input id="searchInput" placeholder="姓名、电话、微信或编号" value="${esc(state.search)}" oninput="onSearch(this.value)" />
             <button class="clear" onclick="onSearch('');document.getElementById('searchInput').value=''" aria-label="清除">${iconClose()}</button>
           </div>
-          <select class="select" onchange="state.intentFilter=this.value;render()"><option value="">意向</option><option value="A" ${state.intentFilter==='A'?'selected':''}>A</option><option value="B" ${state.intentFilter==='B'?'selected':''}>B</option><option value="C" ${state.intentFilter==='C'?'selected':''}>C</option></select>
+          <select class="select" onchange="state.intentFilter=this.value;render()"><option value="">分级</option><option value="A" ${state.intentFilter==='A'?'selected':''}>A级</option><option value="B" ${state.intentFilter==='B'?'selected':''}>B级</option><option value="C" ${state.intentFilter==='C'?'selected':''}>C级</option></select>
           <select class="select" onchange="state.sourceFilter=this.value;render()"><option value="">来源</option><option value="线上" ${state.sourceFilter==='线上'?'selected':''}>线上</option><option value="线下" ${state.sourceFilter==='线下'?'selected':''}>线下</option></select>
         </div>
       </div>
@@ -732,7 +778,7 @@ function renderList(){
           <th class="col-id">编号</th>
           <th class="col-name sortable ${state.sortKey==='name'?'sorted':''}" onclick="toggleSort('name')">姓名 ${sortIcon('name')}</th>
           <th class="col-phone">电话</th><th class="col-wx">微信</th><th class="col-city">城市</th><th class="col-source">来源 · 渠道</th>
-          <th class="col-intent sortable ${state.sortKey==='intent'?'sorted':''}" onclick="toggleSort('intent')">意向 ${sortIcon('intent')}</th>
+          <th class="col-intent sortable ${state.sortKey==='intent'?'sorted':''}" onclick="toggleSort('intent')">分级 ${sortIcon('intent')}</th>
           <th class="col-status">状态</th>
           <th class="col-next sortable ${state.sortKey==='nextFollow'?'sorted':''}" onclick="toggleSort('nextFollow')">下次跟进 ${sortIcon('nextFollow')}</th>
           <th class="col-last sortable ${state.sortKey==='lastFollow'?'sorted':''}" onclick="toggleSort('lastFollow')">最近跟进 ${sortIcon('lastFollow')}</th>
@@ -775,6 +821,7 @@ function renderDetail(){
     <div class="tl-item"><div class="tl-dot ${f.method==='电话'?'phone':f.method==='微信'?'wechat':f.method==='到店'?'visit':'other'}"></div>
       <div class="tl-head"><span class="tl-method">${esc(f.method)}</span><span class="tl-author">${esc(f.author)}</span><span class="tl-time">${esc(f.time)}</span></div>
       <div class="tl-body">${esc(f.content)}</div>
+      ${f.gradeFrom!==undefined&&f.gradeFrom!==f.gradeTo?`<div class="tl-next">分级：${esc(gradeLabel(f.gradeFrom))} → ${esc(gradeLabel(f.gradeTo))}</div>`:''}
       ${f.next?`<div class="tl-next">约定下次：${esc(f.next)}</div>`:''}
     </div>`).join(''):`<div class="empty" style="padding:24px"><h3>还没有跟进记录</h3><p>记下第一条跟进，方便同事接手</p><button class="btn btn-primary btn-sm" onclick="openFollow()">记下跟进</button></div>`;
   document.getElementById('content').innerHTML=`
@@ -795,6 +842,7 @@ function renderDetail(){
         </div>
       </div>
       <div class="info-grid info-grid-5">
+        <div class="info-item"><label>分级</label><div class="val">${intentBadge(c.intent)}</div></div>
         <div class="info-item"><label>电话</label><div class="val phone-cell"><span class="phone">${fmtPhone(c.phone)}</span><button class="copy-btn" style="opacity:1" onclick="copyText('${c.phone}',event)">${iconCopy()}</button></div></div>
         <div class="info-item"><label>微信</label><div class="val wx-cell"><span>${esc(c.wechat)}</span> <button class="copy-btn" style="opacity:1" onclick="copyText('${c.wechat}',event)">${iconCopy()}</button></div></div>
         <div class="info-item"><label>城市</label><div class="val">${esc(c.city)}</div></div>
@@ -802,6 +850,7 @@ function renderDetail(){
         <div class="info-item"><label>服务类型</label><div class="val" style="display:flex;align-items:center;flex-wrap:wrap;gap:4px">${serviceBadge(c)}</div></div>
         <div class="info-item"><label>下次跟进</label><div class="val">${fmtNextFollow(c.nextFollow)}</div></div>
       </div>
+      <div class="section"><div class="section-title">关联项目 <span style="font-weight:400;color:var(--text-muted);font-size:12px">${(c.projects||[]).length}</span></div>${projectHtml(c)}</div>
       <div class="section"><div class="section-title">接待进度 <span style="font-weight:400;color:var(--text-muted);font-size:12px">${Math.min(c.reception,6)}/6</span></div><div class="steps">${stepsHtml}</div></div>
       <div class="detail-grid">
         <div>
@@ -830,10 +879,12 @@ function openFollow(id){
   document.getElementById('fContent').value='';document.getElementById('fNext').value='';
   document.getElementById('fContentGroup').classList.remove('has-error');
   document.querySelectorAll('#fMethod button').forEach((b,i)=>b.classList.toggle('active',i===0));
+  document.querySelectorAll('#fGrade button').forEach(b=>b.classList.toggle('active',b.dataset.v===(c.intent||'')));
   document.querySelectorAll('.quick-dates .chip').forEach(c=>c.classList.remove('active'));
   openModal('followModal');
 }
 function setMethod(btn){document.querySelectorAll('#fMethod button').forEach(b=>b.classList.remove('active'));btn.classList.add('active');}
+function setGrade(btn){document.querySelectorAll('#fGrade button').forEach(b=>b.classList.remove('active'));btn.classList.add('active');}
 function setQuickDate(days,btn){
   document.querySelectorAll('.quick-dates .chip').forEach(c=>c.classList.remove('active'));btn.classList.add('active');
   const d=new Date(TODAY+'T10:00:00');d.setDate(d.getDate()+days);
@@ -849,10 +900,13 @@ function submitFollow(){
   setTimeout(()=>{
     const c=customers.find(x=>x.id===state.followTargetId);
     const method=document.querySelector('#fMethod button.active').dataset.v;
+    const grade=document.querySelector('#fGrade button.active').dataset.v;
+    const gradeFrom=c.intent||'';
     const nextRaw=document.getElementById('fNext').value;
     const next=nextRaw?nextRaw.replace('T',' '):null;
     const now='2026-11-05 '+new Date().toTimeString().slice(0,5);
-    c.follows.unshift({method,content,time:now,author:'老板',next});
+    c.follows.unshift({method,content,time:now,author:'老板',next,gradeFrom,gradeTo:grade});
+    if(grade!==gradeFrom){c.intent=grade;c.points=Object.prototype.hasOwnProperty.call(GRADE_POINTS,grade)?GRADE_POINTS[grade]:null;}
     c.lastFollow=now;if(next)c.nextFollow=next;
     if(c.status==='新线索')c.status='已联系';if(c.reception<2)c.reception=2;
     if(!c.contactNote)c.contactNote=method==='电话'?'已通话':method==='微信'?'已加微信':'已联系';
@@ -900,7 +954,8 @@ function submitCreate(){
   const source=CHANNEL_SOURCE[channel]||'—';
   const intent=document.getElementById('cIntent').value;
   const n=customers.length+1;const id='KH-2026-'+String(n).padStart(3,'0');
-  customers.unshift({id,name,phone:phone||'',wechat,city,source,channel,intent,status:'新线索',points:null,owner:'老板',serviceType:'自营',dealers:[],distributeReason:'',nextFollow:null,lastFollow:null,contactNote:'',hasDrawing:false,reception:1,follows:[],visits:[]});
+  const points=Object.prototype.hasOwnProperty.call(GRADE_POINTS,intent)?GRADE_POINTS[intent]:null;
+  customers.unshift({id,name,phone:phone||'',wechat,city,source,channel,intent,status:'新线索',points,owner:'老板',serviceType:'自营',dealers:[],distributeReason:'',nextFollow:null,lastFollow:null,contactNote:'',hasDrawing:false,reception:1,follows:[],visits:[],projects:[]});
   closeModal('createModal');toast('建档成功：'+name);state.filterTab='全部';state.search='';render();
 }
 function openBatch(){state.batchStep=1;updateBatchUI();openModal('batchModal');}
