@@ -140,14 +140,14 @@ tr:hover .copy-btn,.phone-cell:hover .copy-btn,.wx-cell:hover .copy-btn,.card:ho
 .upload-ico svg{width:36px;height:36px}
 /* sticky name + ops when table must scroll (viewport narrower than 1440) */
 @media (max-width:1439px){
-  table.data{min-width:1100px;table-layout:fixed}
-  table.data th.col-name,table.data td.col-name{position:sticky;left:0;z-index:2;background:#fff;box-shadow:2px 0 4px rgba(0,0,0,.04)}
-  table.data th.col-name{background:#fafafa;z-index:3}
-  table.data th.col-ops,table.data td.col-ops{position:sticky;right:0;z-index:2;background:#fff;box-shadow:-2px 0 4px rgba(0,0,0,.04)}
-  table.data th.col-ops{background:#fafafa;z-index:3}
+  table.data.customer-table{min-width:1100px;table-layout:fixed}
+  table.data.customer-table th.col-name,table.data.customer-table td.col-name{position:sticky;left:0;z-index:2;background:#fff;box-shadow:2px 0 4px rgba(0,0,0,.04)}
+  table.data.customer-table th.col-name{background:#fafafa;z-index:3}
+  table.data.customer-table th.col-ops,table.data.customer-table td.col-ops{position:sticky;right:0;z-index:2;background:#fff;box-shadow:-2px 0 4px rgba(0,0,0,.04)}
+  table.data.customer-table th.col-ops{background:#fafafa;z-index:3}
 }
 @media (min-width:1440px){
-  .table-wrap{overflow-x:hidden}
+  .customer-table-wrap{overflow-x:hidden}
 }
 .badge{display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:4px;font-size:12px;font-weight:500;white-space:nowrap;border:1px solid transparent}
 .badge-intent-A{background:#fff7ed;color:#c2410c;border-color:#fed7aa}
@@ -315,7 +315,7 @@ textarea.input{height:auto;min-height:88px;padding:10px 12px;resize:vertical;lin
   .menu-toggle{display:flex}
   .topbar-search{display:none}
   .content{padding:12px}
-  .table-wrap{display:none}
+  .customer-table-wrap{display:none}
   .card-list{display:flex}
   .toolbar{flex-direction:column;align-items:stretch;gap:8px}
   .toolbar-left,.toolbar-right{margin-left:0;width:100%}
@@ -393,6 +393,19 @@ textarea.input{height:auto;min-height:88px;padding:10px 12px;resize:vertical;lin
 .badge-stage-wait{background:#fff7ed;color:#c2410c;border-color:#fed7aa}
 .badge-stage-done{background:#f0fdf4;color:#15803d;border-color:#bbf7d0}
 .empty-inline{padding:20px;text-align:center;color:var(--text-muted);font-size:13px;background:var(--bg);border-radius:8px}
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:4px 0 16px}
+@media(max-width:900px){.kpi-grid{grid-template-columns:repeat(2,1fr)}}
+.kpi{background:#fff;border:1px solid var(--border);border-radius:8px;padding:14px 16px}
+.kpi .n{font-size:22px;font-weight:700;letter-spacing:-.02em}
+.kpi .l{font-size:12px;color:var(--text-secondary);margin-top:4px}
+.kpi .s{font-size:12px;color:var(--text-muted);margin-top:2px}
+.page-note{font-size:13px;color:var(--text-secondary);line-height:1.6;margin:0 0 14px}
+.block-title{font-size:15px;font-weight:600;margin:22px 0 10px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.mini-tabs{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.rule-off{opacity:.45}
+.margin-bad{color:var(--danger);font-weight:600}
+.margin-warn{color:var(--warning);font-weight:600}
+.panel-body .table-wrap table.data{table-layout:auto;width:max-content;min-width:100%}
 </style>
 </head>
 <body>
@@ -402,14 +415,15 @@ textarea.input{height:auto;min-height:88px;padding:10px 12px;resize:vertical;lin
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-brand"><div class="logo">住</div><span>住家研选</span></div>
     <nav class="sidebar-nav">
+      <a class="nav-item" data-view="dashboard" href="#/dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10.5L12 3l9 7.5V21a1 1 0 01-1 1h-5v-7H9v7H4a1 1 0 01-1-1z"/></svg>工作台</a>
       <div class="nav-group-title">住家研选</div>
-      <a class="nav-item" href="javascript:;" onclick="toast('原型仅演示客户跟进模块')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18M8 2v4M16 2v4"/></svg>今日待办</a>
-      <a class="nav-item" href="javascript:;" onclick="toast('原型仅演示客户跟进模块')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>待办动作</a>
-      <a class="nav-item active" href="#/list"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>客户跟进</a>
-      <a class="nav-item" href="javascript:;" onclick="toast('原型仅演示客户跟进模块')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>项目合同</a>
-      <a class="nav-item" href="javascript:;" onclick="toast('原型仅演示客户跟进模块')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>收支记账</a>
-      <a class="nav-item" href="javascript:;" onclick="toast('原型仅演示客户跟进模块')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>经营看板</a>
-      <a class="nav-item" href="javascript:;" onclick="toast('原型仅演示客户跟进模块')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>规则设置</a>
+      <a class="nav-item" data-view="today" href="#/today"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18M8 2v4M16 2v4"/></svg>今日待办</a>
+      <a class="nav-item" data-view="actions" href="#/actions"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>待办动作</a>
+      <a class="nav-item" data-view="list" href="#/list"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>客户跟进</a>
+      <a class="nav-item" data-view="project" href="#/project"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>项目合同</a>
+      <a class="nav-item" data-view="finance" href="#/finance"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>收支记账</a>
+      <a class="nav-item" data-view="board" href="#/board"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>经营看板</a>
+      <a class="nav-item" data-view="rules" href="#/rules"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>规则设置</a>
     </nav>
   </aside>
   <div class="main">
@@ -595,6 +609,13 @@ textarea.input{height:auto;min-height:88px;padding:10px 12px;resize:vertical;lin
   </div>
 </div>
 
+<div class="overlay" id="moduleModal">
+  <div class="modal modal-lg" role="dialog">
+    <div class="modal-header"><h2 id="moduleTitle">编辑</h2><button class="modal-close" onclick="closeModal('moduleModal')" aria-label="关闭"><svg class="ico-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>
+    <div class="modal-body" id="moduleBody"></div>
+    <div class="modal-footer"><button class="btn btn-default" onclick="closeModal('moduleModal')">取消</button><button class="btn btn-primary" id="moduleOk">确定</button></div>
+  </div>
+</div>
 <div class="toast-wrap" id="toastWrap"></div>
 <div class="changelog" id="changelog">
   <div class="changelog-h"><span>本版改动说明</span><button class="modal-close" onclick="document.getElementById('changelog').classList.add('hidden')" aria-label="关闭"><svg class="ico-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>
@@ -607,6 +628,7 @@ textarea.input{height:auto;min-height:88px;padding:10px 12px;resize:vertical;lin
     <li>详情增加关联项目，一个客户可挂多个项目</li>
     <li>补上原页面能力：导出、阶段筛选、暂缓与回访日、流失原因、预报价「不做」、分发原因与预算较高</li>
     <li>操作列：记跟进 / 查看；空值「—」；空状态</li>
+    <li>补上工作台、今日待办、待办动作、项目合同、收支记账、经营看板、规则设置，并和客户、分级、关联项目连在一起</li>
     <li>详情：上半信息加「服务类型」（自营/分发）；「记下跟进」主按钮；步骤条；时间线；预报价禁用原因留在接待进度</li>
     <li>分发：不可服务原因（超出服务半径/其他），分给经销商；确定后服务类型变分发并记入时间线</li>
     <li>记跟进可写方式/内容/下次时间，真追加</li>
@@ -643,7 +665,7 @@ let customers = [
   {id:'KH-2026-009',name:'冯雪',phone:'13800001009',wechat:'wx_fengxue',city:'苏州',source:'线下',channel:'自然到店/来电',intent:'B',status:'新线索',points:100,owner:'老板',serviceType:'自营',dealers:[],distributeReason:'',nextFollow:'2026-11-08 14:00',lastFollow:'2026-11-02 09:30',contactNote:'已通话',hasDrawing:false,reception:1,follows:[],visits:[],projects:[]},
   {id:'KH-2026-010',name:'韩磊',phone:'13800001010',wechat:'wx_hanlei',city:'昆明',source:'线上',channel:'抖音直播',intent:'C',status:'新线索',points:50,owner:'小李',serviceType:'分发',dealers:['昆明暖居'],distributeReason:'超出服务半径',nextFollow:'2026-11-06 18:00',lastFollow:null,contactNote:'',hasDrawing:false,reception:1,follows:[],visits:[],projects:[]}
 ];
-let state = {view:'list',detailId:null,filterTab:'全部',search:'',intentFilter:'',sourceFilter:'',stageFilter:'',sortKey:'nextFollow',sortDir:'asc',followTargetId:null,batchStep:1,listScroll:0};
+let state = {view:'list',detailId:null,projectId:null,filterTab:'全部',search:'',intentFilter:'',sourceFilter:'',stageFilter:'',sortKey:'nextFollow',sortDir:'asc',followTargetId:null,batchStep:1,listScroll:0,todayFilter:'全部',actionFilter:'全部',showEnded:false};
 customers.forEach(c=>{
   if(c.status==='已成交') c.boardStage='已成交';
   else if(c.status==='已流失') c.boardStage='流失';
@@ -679,13 +701,13 @@ function stageBadge(s){
 }
 function statusBadge(s){return `<span class="badge badge-status-${s}">${s}</span>`;}
 function projectHtml(c){
-  const list=c.projects||[];
-  if(!list.length) return '<div class="empty-inline">还没有关联项目。成交后会在这里看到这个客户的房子和合同。</div>';
+  const list=typeof CONTRACTS==='undefined'?[]:CONTRACTS.filter(p=>p.customerId===c.id);
+  if(!list.length) return '<div class="empty-inline">还没有关联项目。立项之后，这个客户的合同会出现在这里。</div>';
   return `<div class="project-list">${list.map(p=>`
-    <button type="button" class="project-card" onclick="toast('项目详情暂为演示：${esc(p.name)}')">
+    <button type="button" class="project-card" onclick="goProject('${p.id}')">
       <div>
-        <div class="project-name">${esc(p.name)}<span class="project-id">${esc(p.id)}</span></div>
-        <div class="project-meta">${esc(p.community)} ${esc(p.room)} · ${esc(p.layout)} · 预算 ${esc(p.budget)} · 负责人 ${esc(p.owner)}</div>
+        <div class="project-name">${esc(p.id)}<span class="project-id">${esc(p.stage)}</span></div>
+        <div class="project-meta">${esc(p.address)} · 设计师 ${esc(p.designer)} · 订单 ${money(p.amount)} · 待收 ${money(p.due)}</div>
       </div>
       <div class="project-side">${stageBadge(p.stage)}</div>
     </button>`).join('')}</div>`;
@@ -755,20 +777,45 @@ function filtered(){
   });
   return list;
 }
-function goList(){state.view='list';state.detailId=null;location.hash='#/list';document.getElementById('mobileSticky').classList.remove('show');render();if(state.listScroll)requestAnimationFrame(()=>{document.getElementById('content').scrollTop=state.listScroll});}
-function goDetail(id){state.listScroll=document.getElementById('content').scrollTop;state.view='detail';state.detailId=id;location.hash='#/detail/'+id;render();}
-window.addEventListener('hashchange',()=>{const h=location.hash||'#/list';if(h.startsWith('#/detail/')){state.view='detail';state.detailId=h.slice(9);}else{state.view='list';state.detailId=null;document.getElementById('mobileSticky').classList.remove('show');}render();});
+const VIEW_HASH={dashboard:'#/dashboard',today:'#/today',actions:'#/actions',list:'#/list',project:'#/project',finance:'#/finance',board:'#/board',rules:'#/rules'};
+const VIEW_NAME={dashboard:'工作台',today:'今日待办',actions:'待办动作',list:'客户跟进',project:'项目合同',finance:'收支记账',board:'经营看板',rules:'规则设置'};
+function goList(){location.hash='#/list';if(location.hash==='#/list'){applyHash();render();}if(state.listScroll)requestAnimationFrame(()=>{const el=document.getElementById('content');if(el)el.scrollTop=state.listScroll});}
+function goDetail(id){if(document.getElementById('content'))state.listScroll=document.getElementById('content').scrollTop;location.hash='#/detail/'+id;}
+function goProject(id){location.hash='#/project/'+id;}
+function goView(view){location.hash=VIEW_HASH[view]||'#/list';}
+function applyHash(){
+  const h=location.hash||'#/list';
+  document.getElementById('mobileSticky').classList.remove('show');
+  closeSidebar();
+  if(h.startsWith('#/detail/')){state.view='detail';state.detailId=decodeURIComponent(h.slice('#/detail/'.length));return;}
+  if(h.startsWith('#/project/')){state.view='projectDetail';state.projectId=decodeURIComponent(h.slice('#/project/'.length));return;}
+  const found=Object.keys(VIEW_HASH).find(k=>VIEW_HASH[k]===h);
+  state.view=found||'list';
+  state.detailId=null;
+}
+window.addEventListener('hashchange',()=>{applyHash();render();});
 
-function render(){if(state.view==='detail')renderDetail();else renderList();updateChrome();}
+function render(){
+  const map={detail:renderDetail,list:renderList,dashboard:renderDashboard,today:renderToday,actions:renderActions,project:renderProjects,projectDetail:renderProjectDetail,finance:renderFinance,board:renderBoard,rules:renderRules};
+  (map[state.view]||renderList)();
+  updateChrome();
+}
 function updateChrome(){
   const bc=document.getElementById('breadcrumb');const tabs=document.getElementById('tabsBar');
-  if(state.view==='detail'){
-    bc.innerHTML=`<span>住家研选</span><span class="sep">/</span><a href="#/list" onclick="goList();return false">客户跟进</a><span class="sep">/</span><span class="cur">客户详情</span>`;
-    tabs.innerHTML=`<div class="tab" onclick="toast('原型仅演示客户跟进')">工作台</div><div class="tab" onclick="goList()">客户跟进 <span class="x" onclick="event.stopPropagation();goList()">${iconClose()}</span></div><div class="tab active">客户详情 <span class="x" onclick="event.stopPropagation();goList()">${iconClose()}</span></div>`;
+  const parent=state.view==='detail'?'list':state.view==='projectDetail'?'project':state.view;
+  const parentName=VIEW_NAME[parent]||'客户跟进';
+  const cur=state.view==='detail'?'客户详情':state.view==='projectDetail'?'合同详情':parentName;
+  if(state.view==='detail'||state.view==='projectDetail'){
+    bc.innerHTML=`<span>住家研选</span><span class="sep">/</span><a href="${VIEW_HASH[parent]}" onclick="goView('${parent}');return false">${parentName}</a><span class="sep">/</span><span class="cur">${cur}</span>`;
+    tabs.innerHTML=`<div class="tab" onclick="goView('dashboard')">工作台</div><div class="tab" onclick="goView('${parent}')">${parentName}</div><div class="tab active">${cur} <span class="x" onclick="event.stopPropagation();goView('${parent}')">${iconClose()}</span></div>`;
   } else {
-    bc.innerHTML=`<span>住家研选</span><span class="sep">/</span><span class="cur">客户跟进</span>`;
-    tabs.innerHTML=`<div class="tab" onclick="toast('原型仅演示客户跟进')">工作台</div><div class="tab active">客户跟进 <span class="x">${iconClose()}</span></div>`;
+    bc.innerHTML=`<span>住家研选</span><span class="sep">/</span><span class="cur">${cur}</span>`;
+    tabs.innerHTML=`<div class="tab ${state.view==='dashboard'?'active':''}" onclick="goView('dashboard')">工作台</div>${state.view==='dashboard'?'':`<div class="tab active">${cur}</div>`}`;
   }
+  document.querySelectorAll('.nav-item').forEach(a=>{
+    const v=a.dataset.view;
+    a.classList.toggle('active', v===state.view || (state.view==='detail'&&v==='list') || (state.view==='projectDetail'&&v==='project'));
+  });
 }
 function renderList(){
   document.getElementById('mobileSticky').classList.remove('show');
@@ -822,7 +869,7 @@ function renderList(){
         </div>
       </div>
       ${list.length===0?`<div class="empty"><div class="empty-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg></div><h3>没有找到匹配的客户</h3><p>试试清除搜索条件，或换个关键词</p><button class="btn btn-primary" onclick="clearFilters()">清除搜索</button></div>`:`
-        <div class="table-wrap"><table class="data"><thead><tr>
+        <div class="table-wrap customer-table-wrap"><table class="data customer-table"><thead><tr>
           <th class="col-id">编号</th>
           <th class="col-name sortable ${state.sortKey==='name'?'sorted':''}" onclick="toggleSort('name')">姓名 ${sortIcon('name')}</th>
           <th class="col-phone">电话</th><th class="col-wx">微信</th><th class="col-city">城市</th><th class="col-source">来源 · 渠道</th>
@@ -1233,9 +1280,13 @@ function confirmAssign(){
 setTimeout(wireDealerInput,0);
 
 
-if(!location.hash) location.hash='#/list';
-(function(){const h=location.hash||'#/list';if(h.startsWith('#/detail/')){state.view='detail';state.detailId=h.slice(9);}render();})();
 document.querySelectorAll('.overlay').forEach(ov=>{ov.addEventListener('click',e=>{if(e.target===ov)ov.classList.remove('show');});});
+</script>
+<script src="modules.js"></script>
+<script>
+if(!location.hash) location.hash='#/list';
+applyHash();
+render();
 </script>
 </body>
 </html>
