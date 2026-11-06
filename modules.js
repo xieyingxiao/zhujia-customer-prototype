@@ -10,12 +10,24 @@ let CONTRACTS = [
     changes:[{at:'2026-11-05 09:27', by:'老板', what:'记账', from:'未填', to:'项目收款 1000.00'}]},
   {id:'HT-202611-001', customerId:'KH-2026-005', customerName:'吴婷', phone:'13800001005', designer:'设计小王', address:'重庆', stage:'售后', amount:100000, due:0, days:45, ended:false, lost:false, quoteAmount:100000,
     product:'免漆', civil:'已进场', measureDate:'', needMeasure:'是', promise:'', installDate:'2026-10-28', installDays:'3', sitePhone:'13800001005',
-    files:[], factories:[
+    files:[
+      {seq:1, slot:'定金合同', name:'吴婷-定金合同.pdf', type:'application/pdf', url:'', at:'2026-10-08 10:20', by:'销售小李', remark:'', amount:1000},
+      {seq:6, slot:'平面图', name:'吴婷-平面图.pdf', type:'application/pdf', url:'', at:'2026-10-14 16:40', by:'设计小王', remark:'', amount:0},
+      {seq:22, slot:'回传单', name:'吴婷-回传单.jpg', type:'image/jpeg', url:'', at:'2026-10-20 09:10', by:'项目经理小张', remark:'', amount:0}
+    ], factories:[
       {name:'渝北板材厂', content:'柜体', amount:42000, promise:'2026-10-12', forecast:'2026-10-12', actual:'2026-10-12', status:'已完工', at:'2026-10-12 11:00'},
       {name:'两江门业', content:'门板', amount:18600, promise:'2026-10-14', forecast:'2026-10-14', actual:'2026-10-14', status:'已完工', at:'2026-10-14 11:00'},
       {name:'巴南石材', content:'台面', amount:15200, promise:'2026-10-16', forecast:'2026-10-19', actual:'2026-10-19', status:'已到货', at:'2026-10-19 11:00'},
       {name:'九龙坡五金', content:'五金', amount:6800, promise:'2026-10-10', forecast:'2026-10-10', actual:'2026-10-10', status:'已到货', at:'2026-10-10 11:00'}
-    ], rectifies:[], changes:[]}
+    ], rectifies:[
+      {title:'台面接缝重做', note:'巴南石材台面到货后接缝不齐，已约补缝。', status:'未关闭', at:'2026-10-21 15:00'},
+      {title:'门板色差', note:'换了一扇门板，客户已确认。', status:'已关闭', at:'2026-10-22 11:30'}
+    ], changes:[
+      {at:'2026-11-04 11:00', by:'财务小刘', what:'记账', from:'未填', to:'项目收款 100000.00'},
+      {at:'2026-10-21 15:00', by:'老板', what:'打开整改', from:'未填', to:'台面接缝重做'},
+      {at:'2026-10-19 11:00', by:'项目经理小张', what:'改拆单包', from:'生产中', to:'台面 已到货'},
+      {at:'2026-10-15 11:00', by:'老板', what:'客户签字', from:'未签', to:'合同金额 100000.00'}
+    ]}
 ];
 let LEDGER = [
   {kind:'项目收款', dir:'收款', amount:1000, subject:'', cost:false, date:'2026-11-04', due:'', project:'HT-202611-001', customer:'', unpaid:false},
@@ -24,8 +36,17 @@ let LEDGER = [
   {kind:'项目付款', dir:'付款', amount:20000, subject:'安装费', cost:true, date:'2026-11-04', due:'', project:'HT-202611-001', customer:'', unpaid:false},
   {kind:'项目收款', dir:'收款', amount:1000, subject:'', cost:false, date:'2026-11-05', due:'', project:'HT-202611-002', customer:'', unpaid:false}
 ];
-let EXPENSES = [];
-let COMMISSIONS = [];
+let EXPENSES = [
+  {category:'其他', amount:600, date:'2026-11-05', due:'2026-11-08', note:'快递未付', unpaid:true},
+  {category:'推广', amount:1500, date:'2026-11-03', due:'', note:'抖音投放', unpaid:false},
+  {category:'房租', amount:8000, date:'2026-11-01', due:'', note:'门店房租', unpaid:false},
+  {category:'工资', amount:22000, date:'2026-10-28', due:'', note:'10月工资', unpaid:false}
+];
+let COMMISSIONS = [
+  {kind:'设计提成', owner:'设计老张', project:'HT-202611-002', base:1000, rate:5, amount:50, due:'2026-11-10', status:'待发'},
+  {kind:'项目提成', owner:'项目经理小张', project:'HT-202611-001', base:100000, rate:1, amount:1000, due:'2026-11-20', status:'待发'},
+  {kind:'销售提成', owner:'销售小李', project:'HT-202611-001', base:100000, rate:2, amount:2000, due:'2026-10-30', status:'已发'}
+];
 let RULES = [
   {name:'A类分级积分', value:'150', enabled:true},
   {name:'B类分级积分', value:'100', enabled:true},
