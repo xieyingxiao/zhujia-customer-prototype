@@ -24,7 +24,6 @@ let LEDGER = [
   {kind:'项目付款', dir:'付款', amount:20000, subject:'安装费', cost:true, date:'2026-11-04', due:'', project:'HT-202611-001', customer:'', unpaid:false},
   {kind:'项目收款', dir:'收款', amount:1000, subject:'', cost:false, date:'2026-11-05', due:'', project:'HT-202611-002', customer:'', unpaid:false}
 ];
-let GOODS = [];
 let EXPENSES = [];
 let COMMISSIONS = [];
 let RULES = [
@@ -120,7 +119,7 @@ function renderHome(){
   const blocked=CONTRACTS.filter(p=>p.action&&String(p.action.blocker||'').indexOf('还要上传')===0).length;
   pageShell(`
     <div class="page-head">
-      <div><h1>首页看板</h1><p>统计截止 ${TODAY}。左边是还没签约的客户，右边是已经立项的项目。点「去处理」进入这个客户或这个项目。没有挂在项目上的日常开支，到财务中心看。</p></div>
+      <div><h1>首页看板</h1><p>统计截止 ${TODAY}。左边是还没签约的客户，右边是已经立项的项目。点「去处理」进入这个客户或这个项目。没有挂在项目上的日常开支，到财务中心的日常开支里看。</p></div>
       <button class="btn btn-default" onclick="render()">刷新</button>
     </div>
     <div class="kpis">
@@ -1093,20 +1092,19 @@ function submitProject(){
   toast('已立项 '+id);render();
 }
 
+function financeSubnav(active){
+  const tabs=[['finance','收支'],['expenses','日常开支'],['commission','内部提成'],['margin','项目毛利']];
+  return `<div class="submod">${tabs.map(([view,label])=>`<button type="button" class="${active===view?'active':''}" onclick="goView('${view}')">${label}</button>`).join('')}</div>`;
+}
 function renderFinance(){
   const s=financeSummary();
-  const low=ruleValue('毛利率偏低线',25);
-  const margins=CONTRACTS.filter(p=>contractSigned(p)&&Number(p.amount)>0).map(p=>{
-    const cost=projectCost(p.id);
-    const rate=Number(p.amount)?(Number(p.amount)-cost)/Number(p.amount)*100:0;
-    return {p, cost, rate};
-  });
   const recs=CONTRACTS.map(p=>({p, rec:receivableOf(p)})).filter(x=>x.rec);
   const unsigned=CONTRACTS.filter(p=>!contractSigned(p));
   const arAmount=recs.reduce((sum,x)=>sum+x.rec.amount,0);
   pageShell(`
     <div class="page-head"><div><h1>财务中心</h1><p>客户签字之后才有应收。签字前收到的钱记成预收，签字当天冲进这笔应收。统计截止 ${TODAY}。</p></div>
       <button class="btn btn-primary" onclick="openLedger()">记账</button></div>
+    ${financeSubnav('finance')}
     <div class="kpi-grid">
       <div class="kpi"><div class="n">${money(arAmount)}</div><div class="l">应收总额</div></div>
       <div class="kpi"><div class="n">${money(s.due)}</div><div class="l">未收</div></div>
@@ -1125,22 +1123,64 @@ function renderFinance(){
       ${recs.map(x=>`<tr onclick="goProject('${x.p.id}')"><td>${esc(x.p.id)}</td><td>${esc(x.p.customerName)}</td><td>${esc((x.rec.signedAt||'').slice(0,10)||'—')}</td><td>${money(x.rec.amount)}</td><td>${money(x.rec.got)}</td><td>${money(x.rec.open)}</td><td>${arStatusBadge(x.rec.status)}</td></tr>`).join('')||'<tr><td colspan="7">还没有签完合同的项目</td></tr>'}
     </tbody></table></div>
     ${unsigned.length?`<div class="callout" style="margin-top:12px">${unsigned.map(p=>{const got=projectReceived(p.id);return esc(p.customerName)+' '+esc(p.id)+' 还没签合同，不产生应收'+(got>0?'。已收 '+money(got)+' 先记预收':'');}).join('<br>')}</div>`:''}
-    <div class="panel" style="margin:14px 0"><div class="panel-hd"><h3>项目毛利</h3><span class="meta">只算已签字的项目。订单总额减计入成本的付款。低于 ${low}% 用橙色条</span></div><div class="panel-body">
-      ${margins.length?margins.map(m=>`<div class="bar-row"><div class="bar-lab" title="${esc(m.p.id)}">${esc(m.p.customerName)}</div><div class="bar-track"><i class="${m.rate<low?'risk':''}" style="width:${Math.max(0,Math.min(100,m.rate)).toFixed(1)}%"></i></div><div class="bar-val">${m.rate.toFixed(1)}%</div></div>`).join(''):'<div class="empty-inline">还没有已签字的项目金额</div>'}
-    </div></div>
     <div class="block-title">收支流水</div>
     <p class="page-note">项目列用项目号。收款在签字前记预收，签字后冲减上面的应收。</p>
     <div class="table-wrap"><table class="data"><thead><tr><th>种类</th><th>方向</th><th>金额</th><th>科目</th><th>计入成本</th><th>发生日</th><th>项目</th><th>尚未付出</th></tr></thead><tbody>
       ${LEDGER.map(x=>`<tr><td>${esc(x.kind)}</td><td>${esc(x.dir)}</td><td>${money(x.amount)}</td><td>${esc(x.subject||'—')}</td><td>${x.cost?'是':'—'}</td><td>${esc(x.date)}</td><td>${esc(x.project||'—')}</td><td>${x.unpaid?'是':'—'}</td></tr>`).join('')}
     </tbody></table></div>
     <div class="pager"><span class="info">共 ${LEDGER.length} 条</span></div>
-    <div class="block-title">收货款 <button class="btn btn-default btn-sm" onclick="openGoods()">记下收货款</button></div>
-    <p class="page-note">分发客户这一单的货款。补差按这个客户自己的累计货款计算，不按分发回款。</p>
-    ${GOODS.length?`<div class="table-wrap"><table class="data"><thead><tr><th>客户</th><th>发生日</th><th>金额</th><th>补差</th><th>平台</th><th>我方</th><th>规则</th></tr></thead><tbody>${GOODS.map(g=>`<tr><td>${esc(g.customer)}</td><td>${esc(g.date)}</td><td>${money(g.amount)}</td><td>${money(g.adjust)}</td><td>${money(g.platform)}</td><td>${money(g.ours)}</td><td>${esc(g.rule)}</td></tr>`).join('')}</tbody></table></div>`:'<div class="empty-inline">暂无数据</div>'}
-    <div class="block-title">日常开支 <button class="btn btn-default btn-sm" onclick="openExpense()">记下日常开支</button></div>
-    ${EXPENSES.length?`<div class="table-wrap"><table class="data"><thead><tr><th>类别</th><th>发生日</th><th>到期日</th><th>金额</th><th>说明</th><th>尚未付出</th></tr></thead><tbody>${EXPENSES.map(e=>`<tr><td>${esc(e.category)}</td><td>${esc(e.date)}</td><td>${esc(e.due||'—')}</td><td>${money(e.amount)}</td><td>${esc(e.note||'—')}</td><td>${e.unpaid?'是':'—'}</td></tr>`).join('')}</tbody></table></div>`:'<div class="empty-inline">暂无数据</div>'}
-    <div class="block-title">内部提成 <button class="btn btn-default btn-sm" onclick="openCommission()">记内部提成</button></div>
-    ${COMMISSIONS.length?`<div class="table-wrap"><table class="data"><thead><tr><th>种类</th><th>归属人</th><th>项目</th><th>基数</th><th>比例</th><th>金额</th><th>到期日</th><th>状态</th></tr></thead><tbody>${COMMISSIONS.map(c=>`<tr><td>${esc(c.kind)}</td><td>${esc(c.owner)}</td><td>${esc(c.project)}</td><td>${money(c.base)}</td><td>${c.rate}%</td><td>${money(c.amount)}</td><td>${esc(c.due||'—')}</td><td>${esc(c.status)}</td></tr>`).join('')}</tbody></table></div>`:'<div class="empty-inline">暂无数据</div>'}
+  `);
+}
+function renderExpenses(){
+  const month=TODAY.slice(0,7);
+  const paid=EXPENSES.filter(x=>!x.unpaid&&x.date.startsWith(month)).reduce((s,x)=>s+x.amount,0);
+  const open=EXPENSES.filter(x=>x.unpaid).reduce((s,x)=>s+x.amount,0);
+  pageShell(`
+    <div class="page-head"><div><h1>日常开支</h1><p>房租、工资、推广这些不挂在项目上的开支。统计截止 ${TODAY}。</p></div>
+      <button class="btn btn-primary" onclick="openExpense()">记下日常开支</button></div>
+    ${financeSubnav('expenses')}
+    <div class="kpi-grid">
+      <div class="kpi"><div class="n">${EXPENSES.length}</div><div class="l">笔数</div></div>
+      <div class="kpi"><div class="n">${money(paid)}</div><div class="l">本月已付</div></div>
+      <div class="kpi"><div class="n">${money(open)}</div><div class="l">尚未付出</div></div>
+      <div class="kpi"><div class="n">${money(EXPENSES.reduce((s,x)=>s+x.amount,0))}</div><div class="l">累计</div></div>
+    </div>
+    ${EXPENSES.length?`<div class="table-wrap"><table class="data"><thead><tr><th>类别</th><th>发生日</th><th>到期日</th><th>金额</th><th>说明</th><th>尚未付出</th></tr></thead><tbody>${EXPENSES.map(e=>`<tr><td>${esc(e.category)}</td><td>${esc(e.date)}</td><td>${esc(e.due||'—')}</td><td>${money(e.amount)}</td><td>${esc(e.note||'—')}</td><td>${e.unpaid?'是':'—'}</td></tr>`).join('')}</tbody></table></div>`:'<div class="empty-inline">还没有日常开支</div>'}
+  `);
+}
+function renderCommission(){
+  const pending=COMMISSIONS.filter(c=>c.status!=='已发');
+  pageShell(`
+    <div class="page-head"><div><h1>内部提成</h1><p>设计、销售和项目提成记在这里，不进项目成本。统计截止 ${TODAY}。</p></div>
+      <button class="btn btn-primary" onclick="openCommission()">记内部提成</button></div>
+    ${financeSubnav('commission')}
+    <div class="kpi-grid">
+      <div class="kpi"><div class="n">${COMMISSIONS.length}</div><div class="l">笔数</div></div>
+      <div class="kpi"><div class="n">${money(pending.reduce((s,c)=>s+c.amount,0))}</div><div class="l">待发</div></div>
+      <div class="kpi"><div class="n">${pending.length}</div><div class="l">待发笔数</div></div>
+      <div class="kpi"><div class="n">${money(COMMISSIONS.reduce((s,c)=>s+c.amount,0))}</div><div class="l">累计</div></div>
+    </div>
+    ${COMMISSIONS.length?`<div class="table-wrap"><table class="data"><thead><tr><th>种类</th><th>归属人</th><th>项目</th><th>基数</th><th>比例</th><th>金额</th><th>到期日</th><th>状态</th></tr></thead><tbody>${COMMISSIONS.map(c=>`<tr><td>${esc(c.kind)}</td><td>${esc(c.owner)}</td><td>${esc(c.project)}</td><td>${money(c.base)}</td><td>${c.rate}%</td><td>${money(c.amount)}</td><td>${esc(c.due||'—')}</td><td>${esc(c.status)}</td></tr>`).join('')}</tbody></table></div>`:'<div class="empty-inline">还没有内部提成</div>'}
+  `);
+}
+function renderMargin(){
+  const high=ruleValue('毛利率偏高线',55);
+  const low=ruleValue('毛利率偏低线',25);
+  const margins=CONTRACTS.filter(p=>contractSigned(p)&&Number(p.amount)>0).map(p=>{
+    const cost=projectCost(p.id);
+    const rate=Number(p.amount)?(Number(p.amount)-cost)/Number(p.amount)*100:0;
+    let note='';let cls='';
+    if(rate<low){note='毛利率偏低';cls='margin-bad';}
+    else if(rate>high){note='成本可能没录全';cls='margin-warn';}
+    return {p, cost, rate, note, cls};
+  });
+  pageShell(`
+    <div class="page-head"><div><h1>项目毛利</h1><p>只算已经签字的项目。毛利率 =（订单总额 − 成本）÷ 订单总额。统计截止 ${TODAY}。</p></div></div>
+    ${financeSubnav('margin')}
+    <p class="page-note">低于 ${low}% 标红，高于 ${high}% 写成本可能没录全。成本只计项目付款里勾了计入成本的金额。</p>
+    <div class="table-wrap"><table class="data"><thead><tr><th>项目</th><th>客户</th><th>阶段</th><th>订单总额</th><th>成本</th><th>毛利</th><th>毛利率</th><th>说明</th></tr></thead><tbody>
+      ${margins.map(m=>`<tr onclick="goProject('${m.p.id}')"><td>${esc(m.p.id)}</td><td>${esc(m.p.customerName)}</td><td>${esc(m.p.stage)}</td><td>${money(m.p.amount)}</td><td>${money(m.cost)}</td><td>${money(m.p.amount-m.cost)}</td><td class="${m.cls}">${m.rate.toFixed(2)}%</td><td>${esc(m.note||'—')}</td></tr>`).join('')||'<tr><td colspan="8">还没有可算毛利率的项目</td></tr>'}
+    </tbody></table></div>
   `);
 }
 function openLedger(){
@@ -1170,29 +1210,6 @@ function openLedger(){
     else if(dir==='收款'&&rec) toast(rec.open>0?'已冲减应收，还剩 '+money(rec.open):'已冲减应收');
     else toast('已记账');
     render();
-  });
-}
-function openGoods(){
-  const distributed=customers.filter(c=>c.serviceType==='分发');
-  openModule('记下收货款', `
-    <p class="page-note">分发客户这一单的货款。补差按这个客户自己的累计货款计算。</p>
-    <div class="form-group" id="gCustomerGroup"><label>客户 <span class="req">*</span></label><select class="input select" id="gCustomer" style="width:100%"><option value="">请选择</option>${distributed.map(c=>`<option value="${c.id}">${esc(c.name)} · ${c.id}</option>`).join('')}${distributed.length?'':'<option value="" disabled>还没有分发客户</option>'}</select><div class="form-error">请选择分发客户</div></div>
-    <div class="form-row"><div class="form-group"><label>发生日</label><input class="input" type="date" id="gDate" value="${TODAY}" /></div><div class="form-group" id="gAmountGroup"><label>金额 <span class="req">*</span></label><input class="input" id="gAmount" /><div class="form-error">请填写金额</div></div></div>
-  `, ()=>{
-    const id=document.getElementById('gCustomer').value;
-    const amount=Number(document.getElementById('gAmount').value);
-    let ok=true;clearField('gCustomerGroup');clearField('gAmountGroup');
-    if(!id){fieldError('gCustomerGroup');ok=false;}
-    if(!(amount>0)){fieldError('gAmountGroup');ok=false;}
-    if(!ok) return false;
-    const c=customers.find(x=>x.id===id);
-    const line=ruleValue('分发抽成分档线',100000);
-    const rate=amount>line?ruleValue('超过10万的分发抽成比例',3):ruleValue('10万以内分发抽成比例',2.5);
-    const platformRate=ruleValue('平台分成比例',20);
-    const ours=Math.round(amount*rate)/100;
-    const platform=Math.round(amount*platformRate)/100;
-    GOODS.unshift({customer:c.name, date:document.getElementById('gDate').value, amount, adjust:0, platform, ours, rule:rate+'%'});
-    toast('已记下收货款');render();
   });
 }
 function openExpense(){
