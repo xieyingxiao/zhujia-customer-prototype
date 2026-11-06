@@ -634,6 +634,7 @@ textarea.input{height:auto;min-height:88px;padding:10px 12px;resize:vertical;lin
     <li>补上工作台、今日待办、待办动作、项目合同、收支记账、经营看板、规则设置，并和客户、分级、关联项目连在一起</li>
     <li>详情：上半信息加「服务类型」（自营/分发）；「记下跟进」主按钮；步骤条；时间线；预报价禁用原因留在接待进度</li>
     <li>分发：不可服务原因（超出服务半径/其他），分给经销商；确定后服务类型变分发并记入时间线</li>
+    <li>邀约、到店先弹出确认：到店时间必填；到店还可以填接待方式和接待人</li>
     <li>记跟进可写方式/内容/下次时间，真追加</li>
     <li>建档打开不报错；失焦/提交才校验；重复提示</li>
     <li>批量建档三步：模板→上传→结果</li>
@@ -905,10 +906,12 @@ function renderDetail(){
     else if(n === c.reception+1){cls='current';meta='当前';}
     else {cls='pending';meta='未开始';}
     if(cls==='done'&&n===2&&c.follows[0]){meta=`老板 · ${c.follows[0].time.slice(0,16)}`;}
+    if(cls==='done'&&n===3&&c.inviteTime){meta=esc(c.inviteTime);}
+    if(cls==='done'&&n===4&&c.visits[0]){meta=esc(c.visits[0].time);}
     if(n===5 && c.quote==='不做'){meta='不做'+(c.quoteSkipReason?' · '+esc(c.quoteSkipReason):'');}
     if(n>c.reception){
-      if(n===3) action=`<div class="step-action"><button class="btn btn-sm ${cls==='current'?'btn-primary':'btn-default'}" onclick="markReception(3,'已记录邀约')">邀约</button></div>`;
-      if(n===4) action=`<div class="step-action"><button class="btn btn-sm ${cls==='current'?'btn-primary':'btn-default'}" onclick="markVisit()">到店</button></div>`;
+      if(n===3) action=`<div class="step-action"><button class="btn btn-sm ${cls==='current'?'btn-primary':'btn-default'}" onclick="openInvite()">邀约</button></div>`;
+      if(n===4) action=`<div class="step-action"><button class="btn btn-sm ${cls==='current'?'btn-primary':'btn-default'}" onclick="openVisit()">到店</button></div>`;
       if(n===5 && c.quote!=='不做'){
         const ready=c.hasDrawing && cls==='current';
         action=`<div class="step-action"><button class="btn btn-sm btn-primary" ${ready?'':'disabled title="'+(c.hasDrawing?'先完成前面的接待':'先上传图纸')+'"'} onclick="markQuoteSent()">预算已发</button><button class="btn btn-sm btn-default" onclick="openSkipQuote()">不做</button></div>`;
@@ -1113,10 +1116,33 @@ function markReception(n,msg){
   const c=advanceReception(n);if(!c)return;
   toast(msg);render();
 }
-function markVisit(){
-  const c=advanceReception(4);if(!c)return;
-  c.visits.unshift({time:TODAY,note:'到店接待'});
-  toast('已记录到店');render();
+function openInvite(){
+  openModule('邀约到店', `
+    <div class="form-group" id="inviteTimeGroup"><label>到店时间 <span class="req">*</span></label><input class="input" type="datetime-local" id="inviteTime" /><div class="form-error">请填写到店时间</div></div>
+  `, () => {
+    const raw=document.getElementById('inviteTime').value;
+    clearField('inviteTimeGroup');
+    if(!raw){fieldError('inviteTimeGroup');return false;}
+    const c=advanceReception(3);if(!c)return false;
+    c.inviteTime=raw.replace('T',' ');
+    toast('已记录邀约');render();
+  });
+}
+function openVisit(){
+  openModule('到店接待', `
+    <div class="form-group" id="visitTimeGroup"><label>到店时间 <span class="req">*</span></label><input class="input" type="datetime-local" id="visitTime" /><div class="form-error">请填写到店时间</div></div>
+    <div class="form-group"><label>接待方式</label><input class="input" id="visitMethod" /></div>
+    <div class="form-group"><label>接待人</label><input class="input" id="visitHost" /></div>
+  `, () => {
+    const raw=document.getElementById('visitTime').value;
+    clearField('visitTimeGroup');
+    if(!raw){fieldError('visitTimeGroup');return false;}
+    const c=advanceReception(4);if(!c)return false;
+    const method=document.getElementById('visitMethod').value.trim();
+    const host=document.getElementById('visitHost').value.trim();
+    c.visits.unshift({time:raw.replace('T',' '), note:[method, host].filter(Boolean).join(' · ') || '到店接待'});
+    toast('已记录到店');render();
+  });
 }
 function uploadDrawing(){
   const c=customers.find(x=>x.id===state.detailId);if(!c)return;
