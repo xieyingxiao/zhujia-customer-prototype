@@ -60,6 +60,12 @@ let EXPENSES = [
   {category:'房租', amount:8000, date:'2026-11-01', due:'', note:'门店房租', unpaid:false},
   {category:'工资', amount:22000, date:'2026-10-28', due:'', note:'10月工资', unpaid:false}
 ];
+let FACTORIES = [
+  {id:'GC-001', name:'渝北板材厂', city:'重庆', contact:'周厂长', phone:'13800003001', kinds:['柜体','其他'], active:true},
+  {id:'GC-002', name:'两江门业', city:'重庆', contact:'刘厂长', phone:'13800003002', kinds:['门板'], active:true},
+  {id:'GC-003', name:'巴南石材', city:'重庆', contact:'陈厂长', phone:'13800003003', kinds:['台面'], active:true},
+  {id:'GC-004', name:'九龙坡五金', city:'重庆', contact:'王厂长', phone:'13800003004', kinds:['五金'], active:true}
+];
 let COMMISSIONS = [
   {kind:'设计提成', owner:'设计老张', project:'HT-202611-002', base:1000, rate:5, amount:50, due:'2026-11-10', status:'待发'},
   {kind:'项目提成', owner:'项目经理小张', project:'HT-202611-001', base:100000, rate:1, amount:1000, due:'2026-11-20', status:'待发'},
@@ -1015,27 +1021,50 @@ function openLost(id){
     render();
   });
 }
+function refreshFactoryPick(){
+  const content=document.getElementById('facContent').value;
+  const sel=document.getElementById('facPick');
+  const prev=sel.value;
+  const active=FACTORIES.filter(f=>f.active);
+  const fit=active.filter(f=>(f.kinds||[]).includes(content));
+  const rest=active.filter(f=>!(f.kinds||[]).includes(content));
+  const opt=f=>`<option value="${esc(f.id)}">${esc(f.name)}${f.kinds&&f.kinds.length?' · 可做 '+esc(f.kinds.join('、')):''}</option>`;
+  let html='<option value="">请选择</option>';
+  if(fit.length) html+=`<optgroup label="可做${esc(content)}">${fit.map(opt).join('')}</optgroup>`;
+  if(rest.length) html+=`<optgroup label="其他工厂">${rest.map(opt).join('')}</optgroup>`;
+  sel.innerHTML=html;
+  if(active.some(f=>f.id===prev)) sel.value=prev;
+}
 function openFactory(id){
   const p=findProject(id);if(!p||p.lost) return;
+  const active=FACTORIES.filter(f=>f.active);
+  if(!active.length){
+    const okBtn=document.getElementById('moduleOk');
+    openModule('添加拆单包', `<p style="margin:0">还没有可选用的工厂。先到合作伙伴的工厂里录入，再回来拆包。</p>`, ()=>{goView('factories');});
+    okBtn.textContent='去录入工厂';
+    return;
+  }
   openModule('添加拆单包', `
-    <p class="page-note">一个项目可以拆多包。金额用来对账和提醒打款，不计入项目成本。同一品类也可以再加一条。</p>
-    <div class="form-group"><label>包</label><select class="input select" id="facContent" style="width:100%"><option>柜体</option><option>门板</option><option>台面</option><option>五金</option><option>其他</option></select></div>
-    <div class="form-group" id="facNameGroup"><label>工厂 <span class="req">*</span></label><input class="input" id="facName" /><div class="form-error">请填写工厂</div></div>
+    <p class="page-note">工厂从合作伙伴的工厂名录里选。停用的不会出现。金额用来对账，不计入项目成本。同一品类也可以再加一条。</p>
+    <div class="form-group"><label>包</label><select class="input select" id="facContent" style="width:100%" onchange="refreshFactoryPick()"><option>柜体</option><option>门板</option><option>台面</option><option>五金</option><option>其他</option></select></div>
+    <div class="form-group" id="facPickGroup"><label>工厂 <span class="req">*</span></label><select class="input select" id="facPick" style="width:100%"></select><div class="form-error">请选择工厂</div></div>
     <div class="form-group" id="facAmountGroup"><label>金额 <span class="req">*</span></label><input class="input" id="facAmount" placeholder="0.00" /><div class="form-error">请填写金额</div></div>
     <div class="form-row"><div class="form-group"><label>承诺日</label><input class="input" type="date" id="facPromise" /></div><div class="form-group"><label>预测日</label><input class="input" type="date" id="facForecast" /></div></div>
   `, ()=>{
-    const name=document.getElementById('facName').value.trim();
+    const pick=document.getElementById('facPick').value;
+    const fac=FACTORIES.find(f=>f.id===pick && f.active);
     const amount=Number(document.getElementById('facAmount').value);
-    let ok=true;clearField('facNameGroup');clearField('facAmountGroup');
-    if(!name){fieldError('facNameGroup');ok=false;}
+    let ok=true;clearField('facPickGroup');clearField('facAmountGroup');
+    if(!fac){fieldError('facPickGroup');ok=false;}
     if(!(amount>0)){fieldError('facAmountGroup');ok=false;}
     if(!ok) return false;
     const content=document.getElementById('facContent').value;
     p.factories=p.factories||[];
-    p.factories.push({name, content, amount, promise:document.getElementById('facPromise').value, forecast:document.getElementById('facForecast').value, actual:'', status:'待开工', at:stepNow()});
-    pushChange(p,'添加拆单包','未填', content+' · '+name+' '+money(amount));
+    p.factories.push({factoryId:fac.id, name:fac.name, content, amount, promise:document.getElementById('facPromise').value, forecast:document.getElementById('facForecast').value, actual:'', status:'待开工', at:stepNow()});
+    pushChange(p,'添加拆单包','未填', content+' · '+fac.name+' '+money(amount));
     toast('已添加拆单包');render();
   });
+  refreshFactoryPick();
 }
 function openPkgStatus(id, index){
   const p=findProject(id);if(!p||p.lost) return;
@@ -1435,6 +1464,17 @@ function fillRoleModules(role){
 function deleteAccount(i){const a=ACCOUNTS[i];if(a.locked)return;ACCOUNTS.splice(i,1);toast('已删除 '+a.name);render();}
 
 function dealerUsers(name){return customers.filter(c=>(c.dealers||[]).includes(name));}
+function partnerSubnav(active){
+  const tabs=[['dealers','合作伙伴'],['factories','工厂']];
+  return `<div class="submod">${tabs.map(([view,label])=>`<button type="button" class="${active===view?'active':''}" onclick="goView('${view}')">${label}</button>`).join('')}</div>`;
+}
+function factoryPacks(f){
+  const rows=[];
+  CONTRACTS.forEach(p=>(p.factories||[]).forEach(x=>{
+    if(x.factoryId===f.id || (!x.factoryId && x.name===f.name)) rows.push({project:p, pack:x});
+  }));
+  return rows;
+}
 function renderDealers(){
   const q=(state.dealerQ||'').trim();
   const list=DEALERS.filter(d=>!q||[d.name,d.city,d.contact,d.phone].some(v=>String(v||'').includes(q)));
@@ -1445,6 +1485,7 @@ function renderDealers(){
   pageShell(`
     <div class="page-head"><div><h1>合作伙伴</h1><p>分发客户时从这里选。停用后分发列表不再出现，已经分出去的客户仍保留这家名字。</p></div>
       <button class="btn btn-primary" onclick="openDealer()">添加合作伙伴</button></div>
+    ${partnerSubnav('dealers')}
     <div class="toolbar"><div class="toolbar-right" style="margin-left:0"><div class="search-box ${q?'has-value':''}"><svg class="ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg><input placeholder="名称、城市、联系人或电话" value="${esc(q)}" oninput="state.dealerQ=this.value;render()" /><button class="clear" onclick="state.dealerQ='';render()" aria-label="清除">${iconClose()}</button></div></div></div>
     <div class="table-wrap"><table class="data"><thead><tr><th>名称</th><th>城市</th><th>联系人</th><th>电话</th><th>已分发</th><th>状态</th><th class="col-ops">操作</th></tr></thead><tbody>${rows||`<tr><td colspan="7">${q?'没有匹配的合作伙伴':'还没有合作伙伴，点「添加合作伙伴」建第一家。'}</td></tr>`}</tbody></table></div>
     <p class="page-note" style="margin-top:12px">共 ${list.length} 家</p>
@@ -1503,6 +1544,81 @@ function deleteDealer(id){
   });
 }
 
+function renderFactories(){
+  const q=(state.factoryQ||'').trim();
+  const list=FACTORIES.filter(f=>!q||[f.name,f.city,f.contact,f.phone,(f.kinds||[]).join('')].some(v=>String(v||'').includes(q)));
+  const rows=list.map(f=>{
+    const used=factoryPacks(f);
+    return `<tr class="${f.active?'':'rule-off'}"><td><strong>${esc(f.name)}</strong><div style="font-size:12px;color:var(--text-muted)">${esc(f.id)}</div></td><td>${esc(f.city)}</td><td>${esc((f.kinds||[]).join('、')||'—')}</td><td>${esc(f.contact||'—')}</td><td>${f.phone?fmtPhone(f.phone):'—'}</td><td title="${esc(used.map(x=>x.project.id+' '+x.pack.content).join('、'))}">${used.length}</td><td>${f.active?'<span class="badge badge-stage-done">合作中</span>':'<span class="badge badge-intent-none">已停用</span>'}</td><td class="col-ops"><div class="ops"><button class="btn btn-sm btn-default" onclick="openPlant('${f.id}')">编辑</button><button class="btn btn-sm btn-default" onclick="togglePlant('${f.id}')">${f.active?'停用':'启用'}</button><button class="btn btn-sm btn-danger" onclick="deletePlant('${f.id}')">删除</button></div></td></tr>`;
+  }).join('');
+  pageShell(`
+    <div class="page-head"><div><h1>工厂</h1><p>拆单包时从这里选。停用后不能再新选，已经拆出去的包仍保留这家名字。</p></div>
+      <button class="btn btn-primary" onclick="openPlant()">添加工厂</button></div>
+    ${partnerSubnav('factories')}
+    <div class="toolbar"><div class="toolbar-right" style="margin-left:0"><div class="search-box ${q?'has-value':''}"><svg class="ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg><input placeholder="名称、城市、品类、联系人或电话" value="${esc(q)}" oninput="state.factoryQ=this.value;render()" /><button class="clear" onclick="state.factoryQ='';render()" aria-label="清除">${iconClose()}</button></div></div></div>
+    <div class="table-wrap"><table class="data"><thead><tr><th>名称</th><th>城市</th><th>可做品类</th><th>联系人</th><th>电话</th><th>已拆包</th><th>状态</th><th class="col-ops">操作</th></tr></thead><tbody>${rows||`<tr><td colspan="8">${q?'没有匹配的工厂':'还没有工厂，点「添加工厂」建第一家。'}</td></tr>`}</tbody></table></div>
+    <p class="page-note" style="margin-top:12px">共 ${list.length} 家。拆包时，可做当前品类的工厂排在前面。</p>
+  `);
+}
+function openPlant(id){
+  const d=id?FACTORIES.find(x=>x.id===id):null;
+  if(id&&!d) return;
+  const cur=d||{name:'',city:'',contact:'',phone:'',kinds:[]};
+  const kinds=cur.kinds||[];
+  openModule(id?'编辑工厂':'添加工厂', `
+    <div class="form-group" id="pNameGroup"><label>名称 <span class="req">*</span></label><input class="input" id="pName" value="${esc(cur.name)}" /><div class="form-error">请填写名称</div></div>
+    <div class="form-group" id="pCityGroup"><label>城市 <span class="req">*</span></label><input class="input" id="pCity" value="${esc(cur.city)}" /><div class="form-error">请填写城市</div></div>
+    <div class="form-group"><label>可做品类</label><div style="display:flex;flex-wrap:wrap;gap:8px">${['柜体','门板','台面','五金','其他'].map(k=>`<label class="check-row" style="width:88px"><input type="checkbox" name="pKind" value="${k}" ${kinds.includes(k)?'checked':''} /><span class="check"></span><span class="check-text"><span>${k}</span></span></label>`).join('')}</div></div>
+    <div class="form-group"><label>联系人</label><input class="input" id="pContact" value="${esc(cur.contact||'')}" /></div>
+    <div class="form-group" id="pPhoneGroup"><label>电话</label><input class="input" id="pPhone" value="${esc(cur.phone||'')}" placeholder="可空" /><div class="form-error">请输入11位手机号</div></div>
+  `, ()=>{
+    const name=document.getElementById('pName').value.trim();
+    const city=document.getElementById('pCity').value.trim();
+    const contact=document.getElementById('pContact').value.trim();
+    const phone=document.getElementById('pPhone').value.trim();
+    const picked=[...document.querySelectorAll('input[name="pKind"]:checked')].map(x=>x.value);
+    let ok=true;
+    clearField('pNameGroup');clearField('pCityGroup');clearField('pPhoneGroup');
+    const nameErr=document.querySelector('#pNameGroup .form-error');
+    nameErr.textContent='请填写名称';
+    if(!name){fieldError('pNameGroup');ok=false;}
+    else if(FACTORIES.some(x=>x.name===name && x.id!==id)){nameErr.textContent='已有同名工厂';fieldError('pNameGroup');ok=false;}
+    if(!city){fieldError('pCityGroup');ok=false;}
+    if(phone && !/^1\d{10}$/.test(phone)){fieldError('pPhoneGroup');ok=false;}
+    if(!ok) return false;
+    if(d){
+      if(d.name!==name){
+        CONTRACTS.forEach(p=>(p.factories||[]).forEach(x=>{
+          if(x.factoryId===d.id || x.name===d.name){x.factoryId=d.id;x.name=name;}
+        }));
+      }
+      d.name=name;d.city=city;d.contact=contact;d.phone=phone;d.kinds=picked;
+      toast('已保存 '+name);
+    }else{
+      const n=FACTORIES.reduce((m,x)=>Math.max(m, Number(String(x.id).replace(/\D/g,''))||0),0)+1;
+      FACTORIES.push({id:'GC-'+String(n).padStart(3,'0'),name,city,contact,phone,kinds:picked,active:true});
+      toast('已添加 '+name);
+    }
+    render();
+  });
+}
+function togglePlant(id){
+  const d=FACTORIES.find(x=>x.id===id);if(!d)return;
+  d.active=!d.active;
+  toast(d.active?'已启用 '+d.name:'已停用 '+d.name);
+  render();
+}
+function deletePlant(id){
+  const d=FACTORIES.find(x=>x.id===id);if(!d)return;
+  const used=factoryPacks(d);
+  openModule('删除工厂', `<p style="margin:0 0 8px">确定删除「${esc(d.name)}」？</p><p class="page-note" style="margin:0">${used.length?`已经有 ${used.length} 个拆单包用了这家。删除后这些包上的名字还在，只是不能再新选。`:'还没有拆单包用这家。删除后不能恢复。'}</p>`, ()=>{
+    const i=FACTORIES.findIndex(x=>x.id===id);
+    if(i>=0) FACTORIES.splice(i,1);
+    toast('已删除 '+d.name);
+    render();
+  });
+}
+
 function hydrateProjects(){
   const lin=CONTRACTS.find(x=>x.id==='HT-202611-002');
   lin.steps=seedSteps(5,{
@@ -1523,6 +1639,9 @@ function hydrateProjects(){
   });
   const feng=CONTRACTS.find(x=>x.id==='HT-202611-003');
   feng.steps=seedSteps(20,{21:{plan:'2026-11-12'}});
+  const byName={};
+  FACTORIES.forEach(f=>{byName[f.name]=f.id;});
+  CONTRACTS.forEach(p=>(p.factories||[]).forEach(x=>{if(!x.factoryId && byName[x.name]) x.factoryId=byName[x.name];}));
   CONTRACTS.forEach(syncProject);
 }
 hydrateProjects();

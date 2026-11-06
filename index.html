@@ -771,6 +771,7 @@ tr.step-locked td{color:var(--text-muted)}
     <li>详情：上半信息加「服务类型」（自营/分发）；「记下跟进」主按钮；步骤条；时间线；预报价禁用原因留在接待进度</li>
     <li>分发：不可服务只保留超出半径和其他，从合作伙伴名录里多选；确定后服务类型变分发并记入时间线</li>
     <li>合作伙伴单独成页：添加、编辑、停用、删除。停用后不再出现在分发里，已经分出的客户仍保留名字</li>
+    <li>合作伙伴下增加工厂名录。拆单包从已录入且合作中的工厂里选，可做当前品类的排在前面。停用后不能再新选</li>
     <li>邀约、到店先弹出确认：到店时间必填；到店还可以填接待方式和接待人。到店写进跟进记录，不再单独列出到店记录</li>
     <li>上传图纸先选类型和文件。一位客户只留一张，再传会换掉原来的。可以预览和删除</li>
     <li>今日待办左右分成未签约客户和已签约项目</li>
@@ -820,7 +821,7 @@ let customers = [
   {id:'KH-2026-009',name:'冯雪',phone:'13800001009',wechat:'wx_fengxue',city:'苏州',source:'线下',channel:'自然到店/来电',intent:'B',status:'已成交',points:100,owner:'老板',serviceType:'自营',dealers:[],distributeReason:'',nextFollow:null,lastFollow:'2026-11-02 09:30',contactNote:'已通话 · 已加微信',hasDrawing:true,drawing:{slot:'户型图',name:'冯雪-户型图.jpg',type:'image/jpeg',url:''},reception:5,follows:[{method:'到店',content:'到店确认平面后签约。',time:'2026-10-20 11:00',author:'老板',next:null}],projects:[]},
   {id:'KH-2026-010',name:'韩磊',phone:'13800001010',wechat:'wx_hanlei',city:'昆明',source:'线上',channel:'抖音直播',intent:'C',status:'新线索',points:50,owner:'小李',serviceType:'分发',dealers:['昆明暖居'],distributeReason:'超出服务半径',nextFollow:'2026-11-06 18:00',lastFollow:null,contactNote:'',hasDrawing:false,reception:1,follows:[],projects:[]}
 ];
-let state = {view:'list',detailId:null,projectId:null,filterTab:'全部',search:'',intentFilter:'',sourceFilter:'',stageFilter:'',sortKey:'nextFollow',sortDir:'asc',followTargetId:null,batchStep:1,listScroll:0,todayFilter:'全部',actionFilter:'全部',showEnded:false,dealerQ:'',prodFilter:'全部',prodFactory:'',prodStatus:'全部',prodOpen:false};
+let state = {view:'list',detailId:null,projectId:null,filterTab:'全部',search:'',intentFilter:'',sourceFilter:'',stageFilter:'',sortKey:'nextFollow',sortDir:'asc',followTargetId:null,batchStep:1,listScroll:0,todayFilter:'全部',actionFilter:'全部',showEnded:false,dealerQ:'',factoryQ:'',prodFilter:'全部',prodFactory:'',prodStatus:'全部',prodOpen:false};
 customers.forEach(c=>{
   if(c.status==='已成交') c.boardStage='已成交';
   else if(c.status==='已流失') c.boardStage='流失';
@@ -932,8 +933,8 @@ function filtered(){
   });
   return list;
 }
-const VIEW_HASH={home:'#/home',actions:'#/actions',production:'#/production',list:'#/list',project:'#/project',finance:'#/finance',expenses:'#/expenses',commission:'#/commission',margin:'#/margin',dealers:'#/dealers',rules:'#/rules'};
-const VIEW_NAME={home:'首页看板',actions:'待办动作',production:'生产协同',list:'销售管理',project:'项目管理',finance:'财务中心',expenses:'日常开支',commission:'内部提成',margin:'项目毛利',dealers:'合作伙伴',rules:'规则设置'};
+const VIEW_HASH={home:'#/home',actions:'#/actions',production:'#/production',list:'#/list',project:'#/project',finance:'#/finance',expenses:'#/expenses',commission:'#/commission',margin:'#/margin',dealers:'#/dealers',factories:'#/factories',rules:'#/rules'};
+const VIEW_NAME={home:'首页看板',actions:'待办动作',production:'生产协同',list:'销售管理',project:'项目管理',finance:'财务中心',expenses:'日常开支',commission:'内部提成',margin:'项目毛利',dealers:'合作伙伴',factories:'工厂',rules:'规则设置'};
 function goList(){location.hash='#/list';if(location.hash==='#/list'){applyHash();render();}if(state.listScroll)requestAnimationFrame(()=>{const el=document.getElementById('content');if(el)el.scrollTop=state.listScroll});}
 function goDetail(id){if(document.getElementById('content'))state.listScroll=document.getElementById('content').scrollTop;location.hash='#/detail/'+id;}
 function goProject(id){location.hash='#/project/'+id;}
@@ -952,18 +953,19 @@ function applyHash(){
 window.addEventListener('hashchange',()=>{applyHash();render();});
 
 function render(){
-  const map={detail:renderDetail,list:renderList,home:renderHome,actions:renderActions,production:renderProduction,project:renderProjects,projectDetail:renderProjectDetail,finance:renderFinance,expenses:renderExpenses,commission:renderCommission,margin:renderMargin,dealers:renderDealers,rules:renderRules};
+  const map={detail:renderDetail,list:renderList,home:renderHome,actions:renderActions,production:renderProduction,project:renderProjects,projectDetail:renderProjectDetail,finance:renderFinance,expenses:renderExpenses,commission:renderCommission,margin:renderMargin,dealers:renderDealers,factories:renderFactories,rules:renderRules};
   (map[state.view]||renderList)();
   updateChrome();
 }
 function updateChrome(){
   const bc=document.getElementById('breadcrumb');const tabs=document.getElementById('tabsBar');
   const financeChild=state.view==='expenses'||state.view==='commission'||state.view==='margin';
-  const parent=state.view==='detail'?'list':(state.view==='projectDetail'||state.view==='actions'||state.view==='production')?'project':financeChild?'finance':state.view;
+  const partnerChild=state.view==='factories';
+  const parent=state.view==='detail'?'list':(state.view==='projectDetail'||state.view==='actions'||state.view==='production')?'project':financeChild?'finance':partnerChild?'dealers':state.view;
   const parentName=VIEW_NAME[parent]||'销售管理';
   const cur=state.view==='detail'?'客户详情':state.view==='projectDetail'?'项目详情':state.view==='actions'?'待办动作':state.view==='production'?'生产协同':VIEW_NAME[state.view]||parentName;
-  if(state.view==='detail'||state.view==='projectDetail'||state.view==='actions'||state.view==='production'||financeChild){
-    const closeTo=(state.view==='actions'||state.view==='production')?'project':financeChild?'finance':parent;
+  if(state.view==='detail'||state.view==='projectDetail'||state.view==='actions'||state.view==='production'||financeChild||partnerChild){
+    const closeTo=(state.view==='actions'||state.view==='production')?'project':financeChild?'finance':partnerChild?'dealers':parent;
     bc.innerHTML=`<span>住家研选</span><span class="sep">/</span><a href="${VIEW_HASH[parent]}" onclick="goView('${parent}');return false">${parentName}</a><span class="sep">/</span><span class="cur">${cur}</span>`;
     tabs.innerHTML=`<div class="tab" onclick="goView('home')">首页看板</div><div class="tab" onclick="goView('${parent}')">${parentName}</div><div class="tab active">${cur} <span class="x" onclick="event.stopPropagation();goView('${closeTo}')">${iconClose()}</span></div>`;
   } else {
@@ -972,7 +974,7 @@ function updateChrome(){
   }
   document.querySelectorAll('.nav-item').forEach(a=>{
     const v=a.dataset.view;
-    a.classList.toggle('active', v===state.view || (state.view==='detail'&&v==='list') || ((state.view==='projectDetail'||state.view==='actions'||state.view==='production')&&v==='project') || ((state.view==='expenses'||state.view==='commission'||state.view==='margin')&&v==='finance'));
+    a.classList.toggle('active', v===state.view || (state.view==='detail'&&v==='list') || ((state.view==='projectDetail'||state.view==='actions'||state.view==='production')&&v==='project') || ((state.view==='expenses'||state.view==='commission'||state.view==='margin')&&v==='finance') || (state.view==='factories'&&v==='dealers'));
   });
 }
 function renderList(){
