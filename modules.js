@@ -56,7 +56,7 @@ function ruleValue(name, fallback){const r=RULES.find(x=>x.name===name);if(!r||!
 function pageShell(html){
   document.getElementById('mobileSticky').classList.remove('show');
   document.querySelector('.content').classList.remove('detail-page');
-  document.getElementById('content').innerHTML=`<div class="panel"><div class="panel-body">${html}</div></div>`;
+  document.getElementById('content').innerHTML=html;
 }
 function openModule(title, body, onOk){
   document.getElementById('moduleTitle').textContent=title;
@@ -112,19 +112,39 @@ function renderDashboard(){
   const rows=workRows();
   const today=todayItems().slice(0,8);
   const s=financeSummary();
+  const allToday=todayItems();
+  const peopleN=allToday.filter(t=>t.group==='customer').length;
+  const jobN=allToday.filter(t=>t.group==='project').length;
   pageShell(`
-    <p class="page-note">在办一行一个阶段。没有项目的客户占一行，每个项目占一行。</p>
-    <div class="toolbar"><div class="toolbar-left"><button class="btn btn-default" onclick="render()">刷新</button></div></div>
-    <div class="table-wrap"><table class="data"><thead><tr><th>类型</th><th>客户或项目</th><th>阶段</th><th>说明</th><th class="col-ops">操作</th></tr></thead><tbody>
-      ${rows.map(r=>`<tr><td>${esc(r.type)}</td><td><strong>${esc(r.title)}</strong></td><td>${stageBadge(r.stage)}</td><td>${esc(r.desc)}</td><td><button class="btn btn-sm btn-default" onclick="openWork('${r.view}','${r.id}')">打开</button></td></tr>`).join('')||'<tr><td colspan="5">还没有在办的客户或项目</td></tr>'}
-    </tbody></table></div>
-    <div class="block-title">今日 <button class="btn btn-text btn-sm" onclick="goView('today')">全部今日</button></div>
-    <div class="table-wrap"><table class="data"><thead><tr><th>事项</th><th>客户或项目</th><th class="col-ops">操作</th></tr></thead><tbody>
-      ${today.map(t=>`<tr><td>${esc(t.kind)}</td><td>${esc(t.title)} <span style="color:var(--text-muted)">${esc(t.sub)}</span></td><td><button class="btn btn-sm btn-primary" onclick="openWork('${t.view}','${t.id}')">去处理</button></td></tr>`).join('')||'<tr><td colspan="3">今天没有要处理的事</td></tr>'}
-    </tbody></table></div>
-    <div class="block-title">经营数字 <button class="btn btn-text btn-sm" onclick="goView('board')">打开看板</button></div>
-    <p class="page-note">统计截止 ${TODAY}</p>
-    ${kpiHtml(s)}
+    <div class="page-head">
+      <div><h1>工作台</h1><p>统计截止 ${TODAY}。今天有 ${allToday.length} 件事要处理，左边看在办，右边看今天。</p></div>
+      <button class="btn btn-primary" onclick="goView('today')">打开今日待办</button>
+    </div>
+    <div class="kpis">
+      <button type="button" class="kpi" onclick="goView('project')"><div class="lab">在途项目</div><div class="val">${s.inFlight}</div><div class="sub">还没到售后</div></button>
+      <button type="button" class="kpi" onclick="goView('today')"><div class="lab">今日待办</div><div class="val">${allToday.length}</div><div class="sub">客户 ${peopleN} · 项目 ${jobN}</div></button>
+      <button type="button" class="kpi" onclick="goView('finance')"><div class="lab">本月净额</div><div class="val">${money(s.net)}</div><div class="sub">收入 ${money(s.income)}</div></button>
+      <button type="button" class="kpi" onclick="goView('board')"><div class="lab">待收</div><div class="val">${money(s.due)}</div><div class="sub">${s.dueCount} 个项目还没收齐</div></button>
+    </div>
+    <div class="grid-3">
+      <button type="button" class="kpi" onclick="goView('today')"><div class="lab">逾期跟进</div><div class="val">${allToday.filter(t=>t.kind==='逾期跟进').length}</div><div class="sub">未签约客户里已过下次跟进</div></button>
+      <button type="button" class="kpi" onclick="goView('actions')"><div class="lab">当前卡点</div><div class="val">${CONTRACTS.filter(p=>p.action&&String(p.action.blocker||'').indexOf('还要上传')===0).length}</div><div class="sub">当前步骤还缺文件</div></button>
+      <button type="button" class="kpi" onclick="goView('production')"><div class="lab">生产安装</div><div class="val">${CONTRACTS.filter(p=>p.action&&p.action.group==='生产安装').length}</div><div class="sub">当前停在生产安装的项目</div></button>
+    </div>
+    <div class="today-split">
+      <section class="today-pane">
+        <div class="block-title" style="margin-top:0">在办 <span style="font-weight:400;color:var(--text-muted);font-size:12px">没有项目的客户一行，每个项目一行</span></div>
+        <div class="table-wrap"><table class="data"><thead><tr><th>类型</th><th>客户或项目</th><th>阶段</th><th>说明</th><th class="col-ops">操作</th></tr></thead><tbody>
+          ${rows.map(r=>`<tr><td>${esc(r.type)}</td><td><strong>${esc(r.title)}</strong></td><td>${stageBadge(r.stage)}</td><td>${esc(r.desc)}</td><td><button class="btn btn-sm btn-default" onclick="openWork('${r.view}','${r.id}')">打开</button></td></tr>`).join('')||'<tr><td colspan="5">还没有在办的客户或项目</td></tr>'}
+        </tbody></table></div>
+      </section>
+      <section class="today-pane">
+        <div class="block-title" style="margin-top:0">今天 <button class="btn btn-text btn-sm" onclick="goView('today')">全部</button></div>
+        <div class="table-wrap"><table class="data"><thead><tr><th>事项</th><th>客户或项目</th><th class="col-ops">操作</th></tr></thead><tbody>
+          ${today.map(t=>`<tr><td>${esc(t.kind)}</td><td>${esc(t.title)} <span style="color:var(--text-muted)">${esc(t.sub)}</span></td><td><button class="btn btn-sm btn-primary" onclick="openWork('${t.view}','${t.id}')">去处理</button></td></tr>`).join('')||'<tr><td colspan="3">今天没有要处理的事</td></tr>'}
+        </tbody></table></div>
+      </section>
+    </div>
   `);
 }
 function kpiHtml(s){
@@ -168,8 +188,11 @@ function renderToday(){
   const people=all.filter(t=>t.group==='customer');
   const jobs=all.filter(t=>t.group==='project');
   pageShell(`
-    <div class="block-title" style="margin-top:0">今日待办 ${all.length} 条 <button class="btn btn-default btn-sm" onclick="render()">刷新</button></div>
-    <p class="page-note">左边是还没签约的客户，右边是已经立项的项目。点「去处理」进入这个客户或这个项目。没有挂在项目上的日常开支，到收支记账里看。</p>
+    <div class="page-head">
+      <div><h1>今日待办</h1><p>左边是还没签约的客户，右边是已经立项的项目。点「去处理」进入这个客户或这个项目。没有挂在项目上的日常开支，到收支记账里看。</p></div>
+      <button class="btn btn-default" onclick="render()">刷新</button>
+    </div>
+    <div class="block-title" style="margin-top:0">共 ${all.length} 条</div>
     <div class="today-split">
       <section class="today-pane"><div class="block-title">未签约客户 ${people.length} 条</div>${todayTable(people,'客户')}</section>
       <section class="today-pane"><div class="block-title">已签约项目 ${jobs.length} 条</div>${todayTable(jobs,'项目')}</section>
@@ -301,7 +324,7 @@ function contractText(p){
   return signed?money(p.amount):'未签字';
 }
 function projectSubnav(active){
-  const tabs=[['project','项目'],['actions','待办动作']];
+  const tabs=[['project','项目'],['actions','待办动作'],['production','生产协同']];
   return `<div class="submod">${tabs.map(([view,label])=>`<button type="button" class="${active===view?'active':''}" onclick="goView('${view}')">${label}</button>`).join('')}</div>`;
 }
 function renderActions(){
@@ -311,9 +334,10 @@ function renderActions(){
   if(state.actionFilter!=='全部') list=list.filter(p=>p.action.group===state.actionFilter);
   const empty=state.actionFilter==='全部'?'当前没有待办动作':'这个筛选下没有待办动作';
   pageShell(`
+    <div class="page-head"><div><h1>待办动作</h1><p>每个项目只显示当前这一步。完成或标不适用之后，下一步才会出现。还要上传文件时，完成按钮不可用。</p></div>
+      <button class="btn btn-default" onclick="render()">刷新</button></div>
     ${projectSubnav('actions')}
-    <div class="block-title" style="margin-top:0">待办动作 <button class="btn btn-default btn-sm" onclick="render()">刷新</button></div>
-    <p class="page-note">每个项目只显示当前这一步。完成或标不适用之后，下一步才会出现。还要上传文件时，完成按钮不可用。设计类步骤记在立项时指定的设计师名下。</p>
+    <p class="page-note">设计类步骤记在立项时指定的设计师名下。</p>
     <div class="mini-tabs">${filters.map(k=>`<button class="filter-tab ${state.actionFilter===k?'active':''}" onclick="state.actionFilter='${k}';render()">${k}</button>`).join('')}</div>
     <div class="table-wrap"><table class="data"><thead><tr><th>项目</th><th>动作</th><th>设计师</th><th>状态</th><th>卡点</th><th class="col-ops">操作</th></tr></thead><tbody>
       ${list.map(p=>`<tr><td>${esc(p.id)}</td><td>${esc(p.action.name)}</td><td>${esc(p.designer)}</td><td>${esc(p.action.status)}</td><td>${esc(p.action.blocker||'—')}</td><td><div class="ops">
@@ -325,18 +349,61 @@ function renderActions(){
     <div class="pager"><span class="info">共 ${list.length} 条</span></div>
   `);
 }
+function groupPct(p, name){
+  const g=groupStats(p).find(x=>x.name===name);
+  if(!g||!g.total) return 100;
+  return Math.round(g.done/g.total*100);
+}
+function renderProduction(){
+  const open=CONTRACTS.filter(p=>!p.lost);
+  const factories=[];
+  open.forEach(p=>(p.factories||[]).forEach(f=>factories.push(Object.assign({project:p}, f))));
+  const by={};
+  factories.forEach(f=>{(by[f.name]=by[f.name]||[]).push(f);});
+  const names=Object.keys(by);
+  const making=open.filter(p=>p.action&&p.action.group==='生产安装');
+  pageShell(`
+    <div class="page-head"><div><h1>生产协同</h1><p>看哪个项目停在生产安装，工厂记录记在项目上。这里不另开一套订单。</p></div></div>
+    ${projectSubnav('production')}
+    <div class="kpis">
+      <div class="kpi" style="cursor:default"><div class="lab">在办项目</div><div class="val">${open.filter(p=>!p.ended&&p.stage!=='售后').length}</div><div class="sub">还没到售后</div></div>
+      <div class="kpi" style="cursor:default"><div class="lab">生产安装</div><div class="val">${making.length}</div><div class="sub">当前步骤在这一组</div></div>
+      <div class="kpi" style="cursor:default"><div class="lab">工厂记录</div><div class="val">${factories.length}</div><div class="sub">${names.length} 家</div></div>
+      <div class="kpi" style="cursor:default"><div class="lab">已到售后</div><div class="val">${open.filter(p=>p.stage==='售后').length}</div><div class="sub">步骤已走完</div></div>
+    </div>
+    ${names.length?`<div class="factory-grid">${names.map(name=>{
+      const list=by[name];
+      return `<div class="factory-card"><div class="fh"><b>${esc(name)}</b><span class="badge badge-stage">${list.length} 条</span></div>
+        ${list.map(f=>`<div class="pkg-mini"><div style="display:flex;justify-content:space-between;gap:8px"><span><b>${esc(f.project.id)}</b> ${esc(f.content||'')}</span><span class="phone">${money(f.amount)}</span></div><div style="color:var(--text-muted);margin-top:2px">${esc(f.project.customerName)} · ${esc(f.at||'')}</div></div>`).join('')}
+      </div>`;
+    }).join('')}</div>`:`<div class="callout">还没有工厂记录。打开项目详情，点「添加工厂」。金额用来对账，不计入项目成本。</div>`}
+    <div class="panel"><div class="panel-hd"><h3>生产安装进度</h3><span class="meta">按项目 · 点行打开</span></div>
+      <div class="table-wrap"><table class="data"><thead><tr><th>项目</th><th>客户</th><th>当前步骤</th><th>生产安装</th><th>工厂</th></tr></thead><tbody>
+        ${open.map(p=>{
+          const pct=groupPct(p,'生产安装');
+          const cur=currentStep(p);
+          const cls=pct>=100?'ok':(p.action&&p.action.group==='生产安装'?'':'');
+          return `<tr onclick="goProject('${p.id}')"><td>${esc(p.id)}</td><td>${esc(p.customerName)}</td><td>${cur?esc(stepDef(cur.seq).name):'已走完'}</td><td style="min-width:140px"><div class="prog"><i class="${cls}" style="width:${pct}%"></i></div></td><td>${(p.factories||[]).length}</td></tr>`;
+        }).join('')||'<tr><td colspan="5">没有项目</td></tr>'}
+      </tbody></table></div>
+    </div>
+  `);
+}
 function renderProjects(){
   const list=CONTRACTS.filter(p=>state.showEnded||(!p.ended&&!p.lost));
   pageShell(`
+    <div class="page-head"><div><h1>项目管理</h1><p>立项之后在这里按 27 个步骤往下走。打开一行是项目详情。</p></div>
+      <button class="btn btn-primary" onclick="openCreateProject()">立项</button></div>
     ${projectSubnav('project')}
+    <div class="panel"><div class="panel-body">
     <div class="toolbar"><div class="toolbar-left">
-      <button class="btn btn-primary" onclick="openCreateProject()">立项</button>
       <label class="check-row"><input type="checkbox" ${state.showEnded?'checked':''} onchange="state.showEnded=this.checked;render()" /><span class="check"></span><span class="check-text"><span>看已结束和流失</span></span></label>
     </div></div>
     <div class="table-wrap"><table class="data"><thead><tr><th>项目</th><th>客户</th><th>设计师</th><th>客户编号</th><th>电话</th><th>地址</th><th>阶段</th><th>分组进度</th><th>订单总额</th><th>待收</th><th>工期</th><th class="col-ops">操作</th></tr></thead><tbody>
       ${list.map(p=>`<tr onclick="goProject('${p.id}')"><td>${esc(p.id)}</td><td>${esc(p.customerName)}</td><td>${esc(p.designer)}</td><td>${esc(p.customerId)}</td><td class="phone">${fmtPhone(p.phone)}</td><td>${esc(p.address)}</td><td>${stageBadge(p.stage)}</td><td title="${esc(p.progress)}"><span class="ellipsis" style="max-width:220px">${esc(p.progress)}</span></td><td>${money(p.amount)}</td><td>${money(p.due)}</td><td>${p.days} 个工作日</td><td onclick="event.stopPropagation()"><button class="btn btn-sm btn-default" onclick="goProject('${p.id}')">打开</button></td></tr>`).join('')||'<tr><td colspan="12">没有项目</td></tr>'}
     </tbody></table></div>
     <div class="pager"><span class="info">共 ${list.length} 条</span></div>
+    </div></div>
   `);
 }
 function explainStep(p, step, cur){
@@ -382,14 +449,29 @@ function renderProjectDetail(){
   const rows=p.steps.filter(s=>state.stepGroup==='全部'||stepDef(s.seq).group===state.stepGroup);
   const files=p.files||[];
   pageShell(`
-    <div class="detail-header">
-      <div><div class="detail-title"><h1>${esc(p.id)}</h1><div class="detail-tags">${stageBadge(p.stage)}</div></div>
-        <div class="detail-id">${esc(p.customerName)} · ${esc(p.customerId)} · ${cur?esc(stepDef(cur.seq).name):'步骤已走完'}</div></div>
+    <div class="page-head">
+      <div><h1>${esc(p.id)} ${stageBadge(p.stage)}</h1>
+        <p>${esc(p.customerName)} · ${esc(p.customerId)} · ${cur?esc(stepDef(cur.seq).name):'步骤已走完'}</p></div>
       <div class="detail-actions">
         <button class="btn btn-default" onclick="goView('project')">返回项目</button>
         <button class="btn btn-primary" onclick="goDetail('${p.customerId}')">打开客户</button>
       </div>
     </div>
+    <div class="dchips">
+      <div class="dchip"><span class="k">当前步骤</span><span class="v">${cur?esc(stepDef(cur.seq).name):'已走完'}</span></div>
+      <div class="dchip ${Number(p.due)>0?'risk':'ok'}"><span class="k">待收</span><span class="v">${money(p.due)}</span></div>
+      <div class="dchip"><span class="k">合同金额</span><span class="v">${contractText(p)}</span></div>
+      <div class="dchip ${rate>0&&rate<25?'risk':''}"><span class="k">毛利率</span><span class="v">${rate.toFixed(1)}%</span></div>
+      <div class="dchip"><span class="k">工期</span><span class="v">${p.days} 天</span></div>
+    </div>
+    <div class="tl">${groupStats(p).map(g=>{
+      const names=projectGroups();
+      const curG=cur?stepDef(cur.seq).group:'';
+      const i=names.indexOf(g.name);
+      const curI=names.indexOf(curG);
+      const cls=!cur?'done':(i<curI?'done':i===curI?'now':'');
+      return `<div class="tl-step ${cls}"><span class="d"></span><span class="n">${esc(g.name)}</span><span class="t">${g.done}/${g.total}</span></div>`;
+    }).join('')}</div>
     ${p.lost?`<div class="banner-lost">这个项目已流失。步骤、文件和金额只供查看。收款和增项仍在收支记账里记。${p.lostReason?'原因：'+esc(p.lostReason):''}</div>`:`<div class="toolbar"><div class="toolbar-left">
       <button class="btn btn-default" onclick="openSite('${p.id}')">修改现场</button>
       <button class="btn btn-default" onclick="openReconfirm('${p.id}')">重新确认</button>
@@ -912,15 +994,25 @@ function submitProject(){
 
 function renderFinance(){
   const s=financeSummary();
+  const low=ruleValue('毛利率偏低线',25);
+  const margins=CONTRACTS.filter(p=>Number(p.amount)>0).map(p=>{
+    const cost=projectCost(p.id);
+    const rate=Number(p.amount)?(Number(p.amount)-cost)/Number(p.amount)*100:0;
+    return {p, cost, rate};
+  });
   pageShell(`
-    <div class="toolbar"><div class="toolbar-left"><button class="btn btn-primary" onclick="openLedger()">记账</button></div></div>
+    <div class="page-head"><div><h1>收支记账</h1><p>这单收了多少、付了多少。项目列用项目号。统计截止 ${TODAY}。</p></div>
+      <button class="btn btn-primary" onclick="openLedger()">记账</button></div>
     <div class="kpi-grid">
       <div class="kpi"><div class="n">${money(s.income)}</div><div class="l">本月收入</div></div>
       <div class="kpi"><div class="n">${money(s.pay)}</div><div class="l">本月付款</div></div>
       <div class="kpi"><div class="n">${money(EXPENSES.filter(x=>!x.unpaid&&x.date.startsWith(TODAY.slice(0,7))).reduce((a,x)=>a+x.amount,0))}</div><div class="l">本月开支</div></div>
       <div class="kpi"><div class="n">${money(s.net)}</div><div class="l">本月净额</div></div>
     </div>
-    <p class="page-note">待收待付记在下面。项目列用项目号。统计截止 ${TODAY}</p>
+    <div class="panel" style="margin-bottom:14px"><div class="panel-hd"><h3>项目毛利</h3><span class="meta">订单总额减计入成本的付款。低于 ${low}% 用橙色条</span></div><div class="panel-body">
+      ${margins.length?margins.map(m=>`<div class="bar-row"><div class="bar-lab" title="${esc(m.p.id)}">${esc(m.p.customerName)}</div><div class="bar-track"><i class="${m.rate<low?'risk':''}" style="width:${Math.max(0,Math.min(100,m.rate)).toFixed(1)}%"></i></div><div class="bar-val">${m.rate.toFixed(1)}%</div></div>`).join(''):'<div class="empty-inline">还没有已签字的项目金额</div>'}
+    </div></div>
+    <p class="page-note">待收待付记在下面。合同金额在客户签字时按最终报价写入。</p>
     <div class="table-wrap"><table class="data"><thead><tr><th>种类</th><th>方向</th><th>金额</th><th>科目</th><th>计入成本</th><th>发生日</th><th>项目</th><th>尚未付出</th></tr></thead><tbody>
       ${LEDGER.map(x=>`<tr><td>${esc(x.kind)}</td><td>${esc(x.dir)}</td><td>${money(x.amount)}</td><td>${esc(x.subject||'—')}</td><td>${x.cost?'是':'—'}</td><td>${esc(x.date)}</td><td>${esc(x.project||'—')}</td><td>${x.unpaid?'是':'—'}</td></tr>`).join('')}
     </tbody></table></div>
@@ -1027,7 +1119,8 @@ function openCommission(){
 
 function shareRows(title, rows){
   const total=rows.reduce((s,r)=>s+r.n,0)||1;
-  return `<div class="block-title">${title}</div><div class="table-wrap"><table class="data"><thead><tr><th>${title.includes('阶段')?'阶段':title.replace('占比','').replace('分布','')}</th><th>数量</th><th>占比</th></tr></thead><tbody>
+  const bars=rows.map(r=>`<div class="bar-row"><div class="bar-lab" title="${esc(r.name)}">${esc(r.name)}</div><div class="bar-track"><i style="width:${(r.n/total*100).toFixed(1)}%"></i></div><div class="bar-val">${(r.n/total*100).toFixed(0)}%</div></div>`).join('');
+  return `<div class="block-title">${title}</div><div class="panel" style="padding:6px 16px 10px;margin-bottom:10px">${bars||'<div class="empty-inline">暂无</div>'}</div><div class="table-wrap"><table class="data"><thead><tr><th>${title.includes('阶段')?'阶段':title.replace('占比','').replace('分布','')}</th><th>数量</th><th>占比</th></tr></thead><tbody>
     ${rows.map(r=>`<tr><td>${esc(r.name)}</td><td>${r.n}</td><td>${(r.n/total*100).toFixed(1)}%</td></tr>`).join('')||'<tr><td colspan="3">暂无</td></tr>'}
   </tbody></table></div>`;
 }
@@ -1046,7 +1139,7 @@ function renderBoard(){
   });
   const overdue=todayItems().filter(t=>t.kind==='逾期跟进'||t.kind==='项目事项');
   pageShell(`
-    <p class="page-note">统计截止 ${TODAY}。本月收入 ${money(s.income)}</p>
+    <div class="page-head"><div><h1>经营看板</h1><p>统计截止 ${TODAY}。本月收入 ${money(s.income)}。渠道、分级和毛利率都从现有客户和项目算。</p></div></div>
     ${kpiHtml(s)}
     <div class="block-title">今日必看</div>
     ${overdue.length?`<div class="table-wrap"><table class="data"><thead><tr><th>类别</th><th>事项</th><th>客户或项目</th><th>说明</th><th>操作</th></tr></thead><tbody>${overdue.map(t=>`<tr><td>${esc(t.kind)}</td><td>${esc(t.title)}</td><td>${esc(t.sub)}</td><td>${esc(t.detail)}</td><td><button class="btn btn-sm btn-primary" onclick="openWork('${t.view}','${t.id}')">去处理</button></td></tr>`).join('')}</tbody></table></div>`:'<div class="empty-inline">今天没有逾期跟进、逾期项目或 3 天内待收</div>'}
@@ -1065,7 +1158,7 @@ function renderBoard(){
 
 function renderRules(){
   pageShell(`
-    <p class="page-note">当前岗位 负责人。财务只能看。修改必须填原因。停用后这条规则不再参与计算，已写下的积分和抽成不会改写。</p>
+    <div class="page-head"><div><h1>规则设置</h1><p>当前岗位 负责人。财务只能看。修改必须填原因。停用后这条规则不再参与计算，已写下的积分和抽成不会改写。</p></div></div>
     <div class="table-wrap"><table class="data"><thead><tr><th>规则</th><th>当前值</th><th class="col-ops">操作</th></tr></thead><tbody>
       ${RULES.map((r,i)=>`<tr class="${r.enabled?'':'rule-off'}"><td>${esc(r.name)}</td><td>${esc(r.value)}${r.enabled?'':' · 已停用'}</td><td><div class="ops"><button class="btn btn-sm btn-default" onclick="editRule(${i})">编辑</button><button class="btn btn-sm btn-default" onclick="toggleRule(${i})">${r.enabled?'停用':'启用'}</button></div></td></tr>`).join('')}
     </tbody></table></div>
@@ -1139,11 +1232,9 @@ function renderDealers(){
     return `<tr class="${d.active?'':'rule-off'}"><td><strong>${esc(d.name)}</strong><div style="font-size:12px;color:var(--text-muted)">${esc(d.id)}</div></td><td>${esc(d.city)}</td><td>${esc(d.contact||'—')}</td><td>${d.phone?fmtPhone(d.phone):'—'}</td><td title="${esc(used.map(c=>c.name).join('、'))}">${used.length}</td><td>${d.active?'<span class="badge badge-stage-done">合作中</span>':'<span class="badge badge-intent-none">已停用</span>'}</td><td class="col-ops"><div class="ops"><button class="btn btn-sm btn-default" onclick="openDealer('${d.id}')">编辑</button><button class="btn btn-sm btn-default" onclick="toggleDealerActive('${d.id}')">${d.active?'停用':'启用'}</button><button class="btn btn-sm btn-danger" onclick="deleteDealer('${d.id}')">删除</button></div></td></tr>`;
   }).join('');
   pageShell(`
-    <p class="page-note">分发客户时从这里选。在这一页添加、修改、停用或删除。停用后分发列表不再出现，已经分出去的客户仍保留这家名字。</p>
-    <div class="toolbar">
-      <div class="toolbar-left"><button class="btn btn-primary" onclick="openDealer()">添加合作伙伴</button></div>
-      <div class="toolbar-right"><div class="search-box ${q?'has-value':''}"><svg class="ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg><input placeholder="名称、城市、联系人或电话" value="${esc(q)}" oninput="state.dealerQ=this.value;render()" /><button class="clear" onclick="state.dealerQ='';render()" aria-label="清除">${iconClose()}</button></div></div>
-    </div>
+    <div class="page-head"><div><h1>合作伙伴</h1><p>分发客户时从这里选。停用后分发列表不再出现，已经分出去的客户仍保留这家名字。</p></div>
+      <button class="btn btn-primary" onclick="openDealer()">添加合作伙伴</button></div>
+    <div class="toolbar"><div class="toolbar-right" style="margin-left:0"><div class="search-box ${q?'has-value':''}"><svg class="ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg><input placeholder="名称、城市、联系人或电话" value="${esc(q)}" oninput="state.dealerQ=this.value;render()" /><button class="clear" onclick="state.dealerQ='';render()" aria-label="清除">${iconClose()}</button></div></div></div>
     <div class="table-wrap"><table class="data"><thead><tr><th>名称</th><th>城市</th><th>联系人</th><th>电话</th><th>已分发</th><th>状态</th><th class="col-ops">操作</th></tr></thead><tbody>${rows||`<tr><td colspan="7">${q?'没有匹配的合作伙伴':'还没有合作伙伴，点「添加合作伙伴」建第一家。'}</td></tr>`}</tbody></table></div>
     <p class="page-note" style="margin-top:12px">共 ${list.length} 家</p>
   `);
