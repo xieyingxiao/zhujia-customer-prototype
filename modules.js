@@ -124,20 +124,20 @@ function renderHome(){
     </div>
     <div class="kpis">
       <button type="button" class="kpi" onclick="goView('project')"><div class="lab">在途项目</div><div class="val">${s.inFlight}</div><div class="sub">还没到售后</div></button>
-      <button type="button" class="kpi" onclick="document.getElementById('homeToday').scrollIntoView({behavior:'smooth',block:'start'})"><div class="lab">待处理</div><div class="val">${all.length}</div><div class="sub">客户 ${people.length} · 项目 ${jobs.length}</div></button>
+      <button type="button" class="kpi ${all.length?'attn':''}" onclick="document.getElementById('homeToday').scrollIntoView({behavior:'smooth',block:'start'})"><div class="lab">待处理</div><div class="val">${all.length}</div><div class="sub">客户 ${people.length} · 项目 ${jobs.length}</div></button>
       <button type="button" class="kpi" onclick="goView('finance')"><div class="lab">本月净额</div><div class="val">${money(s.net)}</div><div class="sub">收入 ${money(s.income)} · 支出 ${money(s.pay)}</div></button>
-      <button type="button" class="kpi" onclick="goView('finance')"><div class="lab">待收</div><div class="val">${money(s.due)}</div><div class="sub">${s.dueCount} 个已签项目还没收齐</div></button>
+      <button type="button" class="kpi ${s.due>0?'attn':''}" onclick="goView('finance')"><div class="lab">待收</div><div class="val">${money(s.due)}</div><div class="sub">${s.dueCount} 个已签项目还没收齐</div></button>
     </div>
     <div class="kpis">
       <button type="button" class="kpi" onclick="goView('finance')"><div class="lab">累计已收款</div><div class="val">${money(s.received)}</div><div class="sub">${s.receivedCount} 条</div></button>
       <button type="button" class="kpi" onclick="goView('finance')"><div class="lab">本月收入</div><div class="val">${money(s.income)}</div><div class="sub">${s.incomeCount} 条</div></button>
-      <button type="button" class="kpi" onclick="goView('finance')"><div class="lab">全款未收齐</div><div class="val">${s.unpaidCount}</div><div class="sub">签完合同还没收完</div></button>
-      <button type="button" class="kpi" onclick="goView('actions')"><div class="lab">当前卡点</div><div class="val">${blocked}</div><div class="sub">当前步骤还缺文件 · 待发提成 ${money(s.commission)}</div></button>
+      <button type="button" class="kpi ${s.unpaidCount?'attn':''}" onclick="goView('finance')"><div class="lab">全款未收齐</div><div class="val">${s.unpaidCount}</div><div class="sub">签完合同还没收完</div></button>
+      <button type="button" class="kpi ${blocked?'attn':''}" onclick="goView('actions')"><div class="lab">当前卡点</div><div class="val">${blocked}</div><div class="sub">当前步骤还缺文件 · 待发提成 ${money(s.commission)}</div></button>
     </div>
     <div id="homeToday" class="block-title">今天要处理 ${all.length} 条</div>
     <div class="today-split">
-      <section class="today-pane"><div class="block-title">未签约客户 ${people.length} 条</div>${todayTable(people,'客户')}</section>
-      <section class="today-pane"><div class="block-title">已签约项目 ${jobs.length} 条</div>${todayTable(jobs,'项目')}</section>
+      <section class="${paneClass(people)}"><div class="block-title">未签约客户 ${people.length} 条</div>${todayTable(people,'客户')}</section>
+      <section class="${paneClass(jobs)}"><div class="block-title">已签约项目 ${jobs.length} 条</div>${todayTable(jobs,'项目')}</section>
     </div>
     <div class="grid-2" style="margin-top:16px">
       ${shareRows('渠道占比', by(customers,'channel'))}
@@ -150,7 +150,7 @@ function renderHome(){
     <div class="block-title">项目毛利</div>
     <p class="page-note">毛利率 =（订单总额 − 成本）÷ 订单总额。低于 ${low}% 标红，高于 ${high}% 写成本可能没录全。</p>
     <div class="table-wrap"><table class="data"><thead><tr><th>项目</th><th>阶段</th><th>订单总额</th><th>成本</th><th>毛利率</th><th>说明</th></tr></thead><tbody>
-      ${margins.map(m=>`<tr onclick="goProject('${m.p.id}')"><td>${esc(m.p.id)}</td><td>${esc(m.p.stage)}</td><td>${money(m.p.amount)}</td><td>${money(m.cost)}</td><td class="${m.cls}">${m.rate.toFixed(2)}%</td><td>${esc(m.note||'—')}</td></tr>`).join('')||'<tr><td colspan="6">还没有可算毛利率的项目</td></tr>'}
+      ${margins.map(m=>`<tr class="${m.cls==='margin-bad'?'row-hot':m.cls==='margin-warn'?'row-watch':''}" onclick="goProject('${m.p.id}')"><td>${esc(m.p.id)}</td><td>${esc(m.p.stage)}</td><td>${money(m.p.amount)}</td><td>${money(m.cost)}</td><td class="${m.cls}">${m.rate.toFixed(2)}%</td><td>${esc(m.note||'—')}</td></tr>`).join('')||'<tr><td colspan="6">还没有可算毛利率的项目</td></tr>'}
     </tbody></table></div>
   `);
 }
@@ -180,8 +180,38 @@ function financeSummary(){
   };
 }
 
+function toneOfItem(t){
+  const d=String(t.detail||'');
+  if(t.kind==='逾期跟进'||t.kind==='待付'||d.indexOf('超了')===0||d.indexOf('还要上传')===0) return 'hot';
+  if(t.kind==='未首触') return 'watch';
+  return '';
+}
+function paneClass(list){
+  const tones=list.map(toneOfItem);
+  if(tones.includes('hot')) return 'today-pane has-hot';
+  if(tones.includes('watch')) return 'today-pane has-watch';
+  return 'today-pane';
+}
+function toneMark(text, tone){
+  if(tone==='hot') return `<span class="mark hot">${esc(text)}</span>`;
+  if(tone==='watch') return `<span class="mark watch">${esc(text)}</span>`;
+  return esc(text);
+}
+function projectTone(p){
+  const rec=receivableOf(p);
+  if(rec&&rec.open>0) return 'hot';
+  const cur=currentStep(p);
+  if(cur&&cur.plan&&cur.plan<TODAY) return 'hot';
+  if((p.factories||[]).some(pkgLate)) return 'hot';
+  if(p.action&&String(p.action.blocker||'').indexOf('还要上传')===0) return 'watch';
+  if(p.action&&!(p.factories||[]).length&&p.action.group==='生产安装') return 'watch';
+  return '';
+}
 function todayTable(list, who){
-  const rows=list.map(t=>`<tr><td>${esc(t.kind)}</td><td><strong>${esc(t.title)}</strong><div class="project-meta">${esc(t.sub)}</div></td><td>${esc(t.detail)}</td><td>${esc(t.owner)}</td><td class="col-ops"><button class="btn btn-sm btn-primary" onclick="openWork('${t.view}','${t.id}')">去处理</button></td></tr>`).join('');
+  const rows=list.map(t=>{
+    const tone=toneOfItem(t);
+    return `<tr class="${tone==='hot'?'row-hot':tone==='watch'?'row-watch':''}"><td>${toneMark(t.kind,tone)}</td><td><strong>${esc(t.title)}</strong><div class="project-meta">${esc(t.sub)}</div></td><td>${esc(t.detail)}</td><td>${esc(t.owner)}</td><td class="col-ops"><button class="btn btn-sm btn-primary" onclick="openWork('${t.view}','${t.id}')">去处理</button></td></tr>`;
+  }).join('');
   return `<div class="table-wrap"><table class="data"><thead><tr><th>事项</th><th>${who}</th><th>现在的情况</th><th>该谁处理</th><th class="col-ops">操作</th></tr></thead><tbody>
     ${rows||`<tr><td colspan="5">这块今天没有要处理的</td></tr>`}
   </tbody></table></div><div class="pager"><span class="info">共 ${list.length} 条</span></div>`;
@@ -380,11 +410,14 @@ function renderActions(){
     <p class="page-note">设计类步骤记在立项时指定的设计师名下。</p>
     <div class="mini-tabs">${filters.map(k=>`<button class="filter-tab ${state.actionFilter===k?'active':''}" onclick="state.actionFilter='${k}';render()">${k}</button>`).join('')}</div>
     <div class="table-wrap"><table class="data"><thead><tr><th>项目</th><th>动作</th><th>设计师</th><th>状态</th><th>卡点</th><th class="col-ops">操作</th></tr></thead><tbody>
-      ${list.map(p=>`<tr><td>${esc(p.id)}</td><td>${esc(p.action.name)}</td><td>${esc(p.designer)}</td><td>${esc(p.action.status)}</td><td>${esc(p.action.blocker||'—')}</td><td><div class="ops">
+      ${list.map(p=>{
+        const tone=projectTone(p);
+        return `<tr class="${tone==='hot'?'row-hot':tone==='watch'?'row-watch':''}"><td>${esc(p.id)}</td><td>${esc(p.action.name)}</td><td>${esc(p.designer)}</td><td>${esc(p.action.status)}</td><td>${esc(p.action.blocker||'—')}</td><td><div class="ops">
         <button class="btn btn-sm btn-default" onclick="goProject('${p.id}')">打开项目</button>
         ${p.action.needFile?`<button class="btn btn-sm btn-default" onclick="openUpload('${p.id}')">上传</button>`:''}
         <button class="btn btn-sm btn-primary" ${p.action.needFile&&!p.action.uploaded?'disabled':''} onclick="openFinish('${p.id}')">完成</button>
-      </div></td></tr>`).join('')||'<tr><td colspan="6">'+empty+'</td></tr>'}
+      </div></td></tr>`;
+      }).join('')||'<tr><td colspan="6">'+empty+'</td></tr>'}
     </tbody></table></div>
     <div class="pager"><span class="info">共 ${list.length} 条</span></div>
   `);
@@ -432,14 +465,14 @@ function renderProduction(){
     ${projectSubnav('production')}
     <div class="kpis">
       <div class="kpi" style="cursor:default"><div class="lab">拆单包</div><div class="val">${packs.length}</div><div class="sub">${names.length} 家工厂</div></div>
-      <div class="kpi" style="cursor:default"><div class="lab">还没齐</div><div class="val">${openPack}</div><div class="sub">未完工也未到货</div></div>
-      <div class="kpi" style="cursor:default"><div class="lab">延期包</div><div class="val">${lateN}</div><div class="sub">预测已过，或晚于承诺</div></div>
+      <div class="kpi ${openPack?'watch':''}" style="cursor:default"><div class="lab">还没齐</div><div class="val">${openPack}</div><div class="sub">未完工也未到货</div></div>
+      <div class="kpi ${lateN?'attn':''}" style="cursor:default"><div class="lab">延期包</div><div class="val">${lateN}</div><div class="sub">预测已过，或晚于承诺</div></div>
       <div class="kpi" style="cursor:default"><div class="lab">已齐套项目</div><div class="val">${open.filter(p=>pkgReadiness(p)===100).length}</div><div class="sub">包都完工或到货</div></div>
     </div>
     ${names.length?`<div class="factory-grid">${names.map(name=>{
       const list=by[name];
       const late=list.filter(pkgLate).length;
-      return `<div class="factory-card"><div class="fh"><b>${esc(name)}</b>${late?`<span class="badge badge-stage-wait">${late} 延期</span>`:`<span class="badge badge-stage-done">正常</span>`}</div>
+      return `<div class="factory-card ${late?'late':''}"><div class="fh"><b>${esc(name)}</b>${late?`<span class="badge badge-stage-wait">${late} 延期</span>`:`<span class="badge badge-stage-done">正常</span>`}</div>
         <div style="color:var(--text-muted);font-size:12px">在制 ${list.length} 包</div>
         ${list.map(f=>`<div class="pkg-mini" style="cursor:pointer" onclick="goProject('${f.project.id}')"><div style="display:flex;justify-content:space-between;gap:8px"><span><b>${esc(f.project.id)}</b> ${esc(f.content||'')}</span><span>${pkgBadge(f)}</span></div><div class="prog" style="margin-top:6px"><i class="${pkgReady(f)?'ok':pkgLate(f)?'risk':''}" style="width:${pkgProgress(f)}%"></i></div><div style="color:var(--text-muted);margin-top:4px">${esc(f.project.customerName)} · 预测 ${esc(f.forecast||'未填')}</div></div>`).join('')}
       </div>`;
@@ -453,7 +486,8 @@ function renderProduction(){
           const miss=list.filter(f=>!pkgReady(f)).map(f=>f.content).join('、');
           const slow=pkgSlowest(p);
           const bar=rate==null?'—':`<div style="display:flex;align-items:center;gap:8px"><div class="prog" style="flex:1"><i class="${rate>=100?'ok':rate<60?'risk':'warn'}" style="width:${rate}%"></i></div><span class="phone">${rate}%</span></div>`;
-          return `<tr onclick="goProject('${p.id}')"><td>${esc(p.id)}</td><td>${esc(p.customerName)}</td><td>${list.length}</td><td style="min-width:120px">${bar}</td><td>${list.length?(miss||'—'):'还没拆包'}</td><td>${slow?esc(slow.content+' · '+slow.name):'—'}</td><td>${slow?esc(slow.forecast):'—'}</td></tr>`;
+          const tone=(list.some(pkgLate))?'row-hot':(!list.length?'row-watch':'');
+          return `<tr class="${tone}" onclick="goProject('${p.id}')"><td>${esc(p.id)}</td><td>${esc(p.customerName)}</td><td>${list.length}</td><td style="min-width:120px">${bar}</td><td>${list.length?(miss||'—'):'还没拆包'}</td><td>${slow?esc(slow.content+' · '+slow.name):'—'}</td><td>${slow?esc(slow.forecast):'—'}</td></tr>`;
         }).join('')||'<tr><td colspan="7">这个筛选下没有项目</td></tr>'}
       </tbody></table></div>
     </div>
@@ -470,7 +504,7 @@ function renderProjects(){
       <label class="check-row"><input type="checkbox" ${state.showEnded?'checked':''} onchange="state.showEnded=this.checked;render()" /><span class="check"></span><span class="check-text"><span>看已结束和流失</span></span></label>
     </div></div>
     <div class="table-wrap"><table class="data"><thead><tr><th>项目</th><th>客户</th><th>设计师</th><th>客户编号</th><th>电话</th><th>地址</th><th>阶段</th><th>分组进度</th><th>订单总额</th><th>待收</th><th>工期</th><th class="col-ops">操作</th></tr></thead><tbody>
-      ${list.map(p=>`<tr onclick="goProject('${p.id}')"><td>${esc(p.id)}</td><td>${esc(p.customerName)}</td><td>${esc(p.designer)}</td><td>${esc(p.customerId)}</td><td class="phone">${fmtPhone(p.phone)}</td><td>${esc(p.address)}</td><td>${stageBadge(p.stage)}</td><td title="${esc(p.progress)}"><span class="ellipsis" style="max-width:220px">${esc(p.progress)}</span></td><td>${money(p.amount)}</td><td>${dueLabel(p)}</td><td>${p.days} 个工作日</td><td onclick="event.stopPropagation()"><button class="btn btn-sm btn-default" onclick="goProject('${p.id}')">打开</button></td></tr>`).join('')||'<tr><td colspan="12">没有项目</td></tr>'}
+      ${list.map(p=>{const tone=projectTone(p);return `<tr class="${tone==='hot'?'row-hot':tone==='watch'?'row-watch':''}" onclick="goProject('${p.id}')"><td>${esc(p.id)}</td><td>${esc(p.customerName)}</td><td>${esc(p.designer)}</td><td>${esc(p.customerId)}</td><td class="phone">${fmtPhone(p.phone)}</td><td>${esc(p.address)}</td><td>${stageBadge(p.stage)}</td><td title="${esc(p.progress)}"><span class="ellipsis" style="max-width:220px">${esc(p.progress)}</span></td><td>${money(p.amount)}</td><td>${dueLabel(p)}</td><td>${p.days} 个工作日</td><td onclick="event.stopPropagation()"><button class="btn btn-sm btn-default" onclick="goProject('${p.id}')">打开</button></td></tr>`;}).join('')||'<tr><td colspan="12">没有项目</td></tr>'}
     </tbody></table></div>
     <div class="pager"><span class="info">共 ${list.length} 条</span></div>
     </div></div>
@@ -528,10 +562,10 @@ function renderProjectDetail(){
       </div>
     </div>
     <div class="dchips">
-      <div class="dchip"><span class="k">当前步骤</span><span class="v">${cur?esc(stepDef(cur.seq).name):'已走完'}</span></div>
-      <div class="dchip ${receivableOf(p)&&receivableOf(p).open>0?'risk':'ok'}"><span class="k">${contractSigned(p)?'未收':'预收'}</span><span class="v">${contractSigned(p)?dueLabel(p):money(projectReceived(p.id))}</span></div>
+      <div class="dchip ${cur?'now':'ok'}"><span class="k">当前步骤</span><span class="v">${cur?esc(stepDef(cur.seq).name):'已走完'}</span></div>
+      <div class="dchip ${receivableOf(p)&&receivableOf(p).open>0?'risk':contractSigned(p)?'ok':projectReceived(p.id)>0?'watch':''}"><span class="k">${contractSigned(p)?'未收':'预收'}</span><span class="v">${contractSigned(p)?dueLabel(p):money(projectReceived(p.id))}</span></div>
       <div class="dchip"><span class="k">合同金额</span><span class="v">${contractText(p)}</span></div>
-      <div class="dchip ${rate>0&&rate<25?'risk':''}"><span class="k">毛利率</span><span class="v">${rate.toFixed(1)}%</span></div>
+      <div class="dchip ${rate>0&&rate<25?'risk':rate>55?'watch':''}"><span class="k">毛利率</span><span class="v">${rate.toFixed(1)}%</span></div>
       <div class="dchip"><span class="k">工期</span><span class="v">${p.days} 天</span></div>
     </div>
     <div class="tl">${groupStats(p).map(g=>{
@@ -583,7 +617,8 @@ function renderProjectDetail(){
     <div class="table-wrap"><table class="data"><thead><tr><th>步骤</th><th>分组</th><th>岗位</th><th>状态</th><th>计划</th><th>说明</th><th class="col-ops">操作</th></tr></thead><tbody>
       ${rows.map(s=>{
         const def=stepDef(s.seq);
-        const cls=cur&&s.seq===cur.seq?'step-now':(s.status==='未开始'?'step-locked':'');
+        const latePlan=cur&&s.seq===cur.seq&&s.plan&&s.plan<TODAY;
+        const cls=(cur&&s.seq===cur.seq?'step-now':'')+(s.status==='未开始'&&!(cur&&s.seq===cur.seq)?' step-locked':'')+(latePlan?' row-hot':'');
         const plan=s.plan?(s.plan+(s.status==='未开始'&&s.plan<TODAY?' · 超了 '+Math.round((new Date(TODAY)-new Date(s.plan))/86400000)+' 天':'')):'—';
         const status=s.status==='未开始'&&cur&&s.seq===cur.seq?'进行中':s.status;
         return `<tr class="${cls}"><td>${s.seq}. ${esc(def.name)}</td><td>${esc(def.group)}</td><td>${esc(def.role)}</td><td>${esc(status)}</td><td>${esc(plan)}</td><td>${esc(explainStep(p,s,cur))}</td><td>${stepOps(p,s)}</td></tr>`;
@@ -1107,7 +1142,7 @@ function renderFinance(){
     ${financeSubnav('finance')}
     <div class="kpi-grid">
       <div class="kpi"><div class="n">${money(arAmount)}</div><div class="l">应收总额</div></div>
-      <div class="kpi"><div class="n">${money(s.due)}</div><div class="l">未收</div></div>
+      <div class="kpi ${s.due>0?'attn':''}"><div class="n">${money(s.due)}</div><div class="l">未收</div></div>
       <div class="kpi"><div class="n">${money(s.income)}</div><div class="l">本月收入</div></div>
       <div class="kpi"><div class="n">${money(s.net)}</div><div class="l">本月净额</div></div>
     </div>
@@ -1120,9 +1155,9 @@ function renderFinance(){
     <div class="block-title">应收款项</div>
     <p class="page-note">只列出已经完成「客户签字」的项目。应收金额等于合同金额，已收包含签字前的定金。未收大于 0 时，项目里的「收全款」还不能完成。</p>
     <div class="table-wrap"><table class="data"><thead><tr><th>项目</th><th>客户</th><th>签字日</th><th>应收</th><th>已收</th><th>未收</th><th>状态</th></tr></thead><tbody>
-      ${recs.map(x=>`<tr onclick="goProject('${x.p.id}')"><td>${esc(x.p.id)}</td><td>${esc(x.p.customerName)}</td><td>${esc((x.rec.signedAt||'').slice(0,10)||'—')}</td><td>${money(x.rec.amount)}</td><td>${money(x.rec.got)}</td><td>${money(x.rec.open)}</td><td>${arStatusBadge(x.rec.status)}</td></tr>`).join('')||'<tr><td colspan="7">还没有签完合同的项目</td></tr>'}
+      ${recs.map(x=>`<tr class="${x.rec.open>0?'row-hot':x.rec.open<0?'row-watch':''}" onclick="goProject('${x.p.id}')"><td>${esc(x.p.id)}</td><td>${esc(x.p.customerName)}</td><td>${esc((x.rec.signedAt||'').slice(0,10)||'—')}</td><td>${money(x.rec.amount)}</td><td>${money(x.rec.got)}</td><td>${money(x.rec.open)}</td><td>${arStatusBadge(x.rec.status)}</td></tr>`).join('')||'<tr><td colspan="7">还没有签完合同的项目</td></tr>'}
     </tbody></table></div>
-    ${unsigned.length?`<div class="callout" style="margin-top:12px">${unsigned.map(p=>{const got=projectReceived(p.id);return esc(p.customerName)+' '+esc(p.id)+' 还没签合同，不产生应收'+(got>0?'。已收 '+money(got)+' 先记预收':'');}).join('<br>')}</div>`:''}
+    ${unsigned.length?`<div class="callout warn" style="margin-top:12px">${unsigned.map(p=>{const got=projectReceived(p.id);return esc(p.customerName)+' '+esc(p.id)+' 还没签合同，不产生应收'+(got>0?'。已收 '+money(got)+' 先记预收':'');}).join('<br>')}</div>`:''}
     <div class="block-title">收支流水</div>
     <p class="page-note">项目列用项目号。收款在签字前记预收，签字后冲减上面的应收。</p>
     <div class="table-wrap"><table class="data"><thead><tr><th>种类</th><th>方向</th><th>金额</th><th>科目</th><th>计入成本</th><th>发生日</th><th>项目</th><th>尚未付出</th></tr></thead><tbody>
@@ -1142,10 +1177,10 @@ function renderExpenses(){
     <div class="kpi-grid">
       <div class="kpi"><div class="n">${EXPENSES.length}</div><div class="l">笔数</div></div>
       <div class="kpi"><div class="n">${money(paid)}</div><div class="l">本月已付</div></div>
-      <div class="kpi"><div class="n">${money(open)}</div><div class="l">尚未付出</div></div>
+      <div class="kpi ${open>0?'watch':''}"><div class="n">${money(open)}</div><div class="l">尚未付出</div></div>
       <div class="kpi"><div class="n">${money(EXPENSES.reduce((s,x)=>s+x.amount,0))}</div><div class="l">累计</div></div>
     </div>
-    ${EXPENSES.length?`<div class="table-wrap"><table class="data"><thead><tr><th>类别</th><th>发生日</th><th>到期日</th><th>金额</th><th>说明</th><th>尚未付出</th></tr></thead><tbody>${EXPENSES.map(e=>`<tr><td>${esc(e.category)}</td><td>${esc(e.date)}</td><td>${esc(e.due||'—')}</td><td>${money(e.amount)}</td><td>${esc(e.note||'—')}</td><td>${e.unpaid?'是':'—'}</td></tr>`).join('')}</tbody></table></div>`:'<div class="empty-inline">还没有日常开支</div>'}
+    ${EXPENSES.length?`<div class="table-wrap"><table class="data"><thead><tr><th>类别</th><th>发生日</th><th>到期日</th><th>金额</th><th>说明</th><th>尚未付出</th></tr></thead><tbody>${EXPENSES.map(e=>`<tr class="${e.unpaid?'row-watch':''}"><td>${esc(e.category)}</td><td>${esc(e.date)}</td><td>${esc(e.due||'—')}</td><td>${money(e.amount)}</td><td>${esc(e.note||'—')}</td><td>${e.unpaid?'是':'—'}</td></tr>`).join('')}</tbody></table></div>`:'<div class="empty-inline">还没有日常开支</div>'}
   `);
 }
 function renderCommission(){
@@ -1156,11 +1191,11 @@ function renderCommission(){
     ${financeSubnav('commission')}
     <div class="kpi-grid">
       <div class="kpi"><div class="n">${COMMISSIONS.length}</div><div class="l">笔数</div></div>
-      <div class="kpi"><div class="n">${money(pending.reduce((s,c)=>s+c.amount,0))}</div><div class="l">待发</div></div>
+      <div class="kpi ${pending.length?'watch':''}"><div class="n">${money(pending.reduce((s,c)=>s+c.amount,0))}</div><div class="l">待发</div></div>
       <div class="kpi"><div class="n">${pending.length}</div><div class="l">待发笔数</div></div>
       <div class="kpi"><div class="n">${money(COMMISSIONS.reduce((s,c)=>s+c.amount,0))}</div><div class="l">累计</div></div>
     </div>
-    ${COMMISSIONS.length?`<div class="table-wrap"><table class="data"><thead><tr><th>种类</th><th>归属人</th><th>项目</th><th>基数</th><th>比例</th><th>金额</th><th>到期日</th><th>状态</th></tr></thead><tbody>${COMMISSIONS.map(c=>`<tr><td>${esc(c.kind)}</td><td>${esc(c.owner)}</td><td>${esc(c.project)}</td><td>${money(c.base)}</td><td>${c.rate}%</td><td>${money(c.amount)}</td><td>${esc(c.due||'—')}</td><td>${esc(c.status)}</td></tr>`).join('')}</tbody></table></div>`:'<div class="empty-inline">还没有内部提成</div>'}
+    ${COMMISSIONS.length?`<div class="table-wrap"><table class="data"><thead><tr><th>种类</th><th>归属人</th><th>项目</th><th>基数</th><th>比例</th><th>金额</th><th>到期日</th><th>状态</th></tr></thead><tbody>${COMMISSIONS.map(c=>`<tr class="${c.status==='待发'?'row-watch':''}"><td>${esc(c.kind)}</td><td>${esc(c.owner)}</td><td>${esc(c.project)}</td><td>${money(c.base)}</td><td>${c.rate}%</td><td>${money(c.amount)}</td><td>${esc(c.due||'—')}</td><td>${esc(c.status)}</td></tr>`).join('')}</tbody></table></div>`:'<div class="empty-inline">还没有内部提成</div>'}
   `);
 }
 function renderMargin(){
@@ -1179,7 +1214,7 @@ function renderMargin(){
     ${financeSubnav('margin')}
     <p class="page-note">低于 ${low}% 标红，高于 ${high}% 写成本可能没录全。成本只计项目付款里勾了计入成本的金额。</p>
     <div class="table-wrap"><table class="data"><thead><tr><th>项目</th><th>客户</th><th>阶段</th><th>订单总额</th><th>成本</th><th>毛利</th><th>毛利率</th><th>说明</th></tr></thead><tbody>
-      ${margins.map(m=>`<tr onclick="goProject('${m.p.id}')"><td>${esc(m.p.id)}</td><td>${esc(m.p.customerName)}</td><td>${esc(m.p.stage)}</td><td>${money(m.p.amount)}</td><td>${money(m.cost)}</td><td>${money(m.p.amount-m.cost)}</td><td class="${m.cls}">${m.rate.toFixed(2)}%</td><td>${esc(m.note||'—')}</td></tr>`).join('')||'<tr><td colspan="8">还没有可算毛利率的项目</td></tr>'}
+      ${margins.map(m=>`<tr class="${m.cls==='margin-bad'?'row-hot':m.cls==='margin-warn'?'row-watch':''}" onclick="goProject('${m.p.id}')"><td>${esc(m.p.id)}</td><td>${esc(m.p.customerName)}</td><td>${esc(m.p.stage)}</td><td>${money(m.p.amount)}</td><td>${money(m.cost)}</td><td>${money(m.p.amount-m.cost)}</td><td class="${m.cls}">${m.rate.toFixed(2)}%</td><td>${esc(m.note||'—')}</td></tr>`).join('')||'<tr><td colspan="8">还没有可算毛利率的项目</td></tr>'}
     </tbody></table></div>
   `);
 }

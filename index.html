@@ -429,6 +429,34 @@ textarea.input{height:auto;min-height:88px;padding:10px 12px;resize:vertical;lin
 .kpi .val{font-size:26px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums;line-height:1.2;margin-top:6px}
 .kpi .sub{font-size:12px;color:var(--text-muted);margin-top:6px}
 .kpi .sub .risk{color:var(--danger);font-weight:500}
+.kpi.attn{background:var(--danger-bg);border-color:var(--danger-border)}
+.kpi.attn .val,.kpi.attn .n{color:var(--danger)}
+.kpi.attn .lab,.kpi.attn .l{color:#9A3412}
+.kpi.watch{background:var(--warning-bg);border-color:var(--warning-border)}
+.kpi.watch .val,.kpi.watch .n{color:var(--warning)}
+.kpi.watch .lab,.kpi.watch .l{color:#92400E}
+.kpis .kpi.attn:hover{border-color:var(--danger)}
+.kpis .kpi.watch:hover{border-color:var(--warning)}
+.mark{display:inline-flex;align-items:center;height:20px;padding:0 6px;border-radius:4px;font-size:12px;font-weight:600;line-height:1}
+.mark.hot{background:#fff;color:var(--danger);border:1px solid var(--danger-border)}
+.mark.watch{background:#fff;color:var(--warning);border:1px solid var(--warning-border)}
+table.data tbody tr.row-hot td{background:#FFF7ED}
+table.data tbody tr.row-watch td{background:#FFFBEB}
+table.data tbody tr.row-hot td:first-child{box-shadow:inset 3px 0 0 var(--danger)}
+table.data tbody tr.row-watch td:first-child{box-shadow:inset 3px 0 0 var(--warning)}
+table.data tbody tr.row-hot:hover td,table.data tbody tr.row-hot:hover td.col-name,table.data tbody tr.row-hot:hover td.col-ops{background:#FFEDD5}
+table.data tbody tr.row-watch:hover td,table.data tbody tr.row-watch:hover td.col-name,table.data tbody tr.row-watch:hover td.col-ops{background:#FEF3C7}
+.today-pane.has-hot{border-color:var(--danger-border);background:linear-gradient(#FFF7ED,#fff 88px)}
+.today-pane.has-watch{border-color:var(--warning-border);background:linear-gradient(#FFFBEB,#fff 88px)}
+.today-pane tr.row-hot td.col-ops{background:#FFF7ED}
+.today-pane tr.row-watch td.col-ops{background:#FFFBEB}
+.dchip.now{background:var(--primary-light);border-color:var(--primary-border)}
+.dchip.now .v{color:var(--primary-active)}
+.dchip.watch{background:var(--warning-bg);border-color:var(--warning-border)}
+.dchip.watch .v{color:var(--warning)}
+.card.card-hot,.project-card.card-hot{background:#FFF7ED;border-color:var(--danger-border)}
+.card.card-watch,.project-card.card-watch{background:#FFFBEB;border-color:var(--warning-border)}
+.factory-card.late{background:#FFF7ED;border-color:var(--danger-border)}
 .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
 @media(max-width:1100px){.grid-2,.grid-3{grid-template-columns:1fr}}
@@ -484,6 +512,9 @@ textarea.input{height:auto;min-height:88px;padding:10px 12px;resize:vertical;lin
 .group-chip.on{border-color:transparent;background:var(--primary-light);color:var(--primary-active)}
 .group-chip.on b{color:var(--primary)}
 tr.step-now td{background:#F0FDFA}
+tr.step-now td:first-child{box-shadow:inset 3px 0 0 var(--primary)}
+tr.step-now.row-hot td{background:#FFF7ED}
+tr.step-now.row-hot td:first-child{box-shadow:inset 3px 0 0 var(--danger)}
 tr.step-locked td{color:var(--text-muted)}
 .banner-lost{background:#fef2f2;border:1px solid #fecaca;color:#991b1b;border-radius:8px;padding:12px 14px;margin:0 0 14px;font-size:13px;line-height:1.6}
 .step-ops{display:flex;flex-wrap:wrap;gap:6px}
@@ -724,6 +755,7 @@ tr.step-locked td{color:var(--text-muted)}
     <li>今日待办和经营看板合成首页看板，工作台去掉。待处理的客户和项目、经营数字、渠道分级和毛利率都在这一页</li>
     <li>收支记账改名为财务中心。项目完成客户签字后按合同金额生成应收，签字前的收款只记预收</li>
     <li>财务中心去掉收货款。日常开支、内部提成、项目毛利各自单独一块</li>
+    <li>逾期、缺文件、未收和毛利异常用暖色标出。数字是 0、已经收齐的，仍是白底</li>
     <li>记跟进可写方式/内容/下次时间，真追加</li>
     <li>建档打开不报错；失焦/提交才校验；重复提示</li>
     <li>批量建档三步：模板→上传→结果</li>
@@ -797,7 +829,7 @@ function projectHtml(c){
   const list=typeof CONTRACTS==='undefined'?[]:CONTRACTS.filter(p=>p.customerId===c.id);
   if(!list.length) return '<div class="empty-inline">还没有关联项目。立项之后，这个客户的项目会出现在这里。</div>';
   return `<div class="project-list">${list.map(p=>`
-    <button type="button" class="project-card" onclick="goProject('${p.id}')">
+    <button type="button" class="project-card ${projectTone(p)==='hot'?'card-hot':projectTone(p)==='watch'?'card-watch':''}" onclick="goProject('${p.id}')">
       <div>
         <div class="project-name">${esc(p.id)}<span class="project-id">${esc(p.stage)}</span></div>
         <div class="project-meta">${esc(p.address)} · 设计师 ${esc(p.designer)} · 订单 ${money(p.amount)} · ${contractSigned(p)?'未收 '+dueLabel(p):'还没签合同，不产生应收'}</div>
@@ -918,8 +950,11 @@ function renderList(){
   document.querySelector('.content').classList.remove('detail-page');
   const counts=getCounts();const list=filtered();
   const sortIcon=(k)=> state.sortKey===k ? iconSort(state.sortDir) : iconSort(null);
-  const rows=list.map(c=>`
-    <tr onclick="goDetail('${c.id}')">
+  const rows=list.map(c=>{
+    const late=c.nextFollow&&c.nextFollow.slice(0,10)<TODAY;
+    const today=c.nextFollow&&c.nextFollow.slice(0,10)===TODAY;
+    return `
+    <tr class="${late?'row-hot':today?'row-watch':''}" onclick="goDetail('${c.id}')">
       <td class="col-id" style="color:var(--text-muted);font-size:12px" title="${c.id}">${c.id}</td>
       <td class="col-name"><strong>${esc(c.name)}</strong></td>
       <td class="col-phone"><div class="phone-cell"><span class="phone">${fmtPhone(c.phone)}</span><button class="copy-btn" title="复制" onclick="copyText('${c.phone}',event)">${iconCopy()}</button></div></td>
@@ -935,14 +970,19 @@ function renderList(){
         <button class="btn btn-sm btn-primary" onclick="openFollow('${c.id}')">记跟进</button>
         <button class="btn btn-sm btn-default" onclick="goDetail('${c.id}')">查看</button>
       </div></td>
-    </tr>`).join('');
-  const cards=list.map(c=>`
-    <div class="card" onclick="goDetail('${c.id}')">
+    </tr>`;
+  }).join('');
+  const cards=list.map(c=>{
+    const late=c.nextFollow&&c.nextFollow.slice(0,10)<TODAY;
+    const today=c.nextFollow&&c.nextFollow.slice(0,10)===TODAY;
+    return `
+    <div class="card ${late?'card-hot':today?'card-watch':''}" onclick="goDetail('${c.id}')">
       <div class="card-top"><div class="card-name">${esc(c.name)} ${intentBadge(c.intent)}</div><div>${statusBadge(c.status)} ${stageMark(c)}</div></div>
       <div class="card-meta"><a href="tel:${c.phone}" onclick="event.stopPropagation()">${fmtPhone(c.phone)}</a><span>${esc(c.city)}</span><span>${esc(c.source)} · ${esc(c.channel)}</span></div>
       <div class="card-bottom"><span style="font-size:12px">下次跟进：${fmtNextFollow(c.nextFollow)}</span>
         <button class="btn btn-sm btn-primary" onclick="event.stopPropagation();openFollow('${c.id}')">记跟进</button></div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
   document.getElementById('content').innerHTML=`
     <div class="page-head"><div><h1>销售管理</h1><p>客户、分级和接待进度。点一行进入客户详情。</p></div></div>
     <div class="panel"><div class="panel-body">
