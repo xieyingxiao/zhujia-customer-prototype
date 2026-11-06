@@ -528,14 +528,12 @@ function renderProduction(){
       <div class="kpi ${lateN?'attn':''}" style="cursor:default"><div class="lab">延期包</div><div class="val">${lateN}</div><div class="sub">预测已过，或晚于承诺</div></div>
       <div class="kpi" style="cursor:default"><div class="lab">已齐套项目</div><div class="val">${open.filter(p=>pkgReadiness(p)===100).length}</div><div class="sub">包都完工或到货</div></div>
     </div>
-    ${names.length?`<div class="fac-key">${PKG_STATUSES.map((s,i)=>`<span><i class="s${i}"></i>${esc(s)}</span>`).join('')}</div><div class="factory-grid">${names.map(name=>{
+    ${names.length?`<div class="factory-grid">${names.map(name=>{
       const list=by[name];
       const late=list.filter(pkgLate).length;
-      const counts=PKG_STATUSES.map((s,i)=>({s, i, n:list.filter(f=>pkgShownStatus(f)===s).length}));
-      const live=counts.filter(c=>c.n);
+      const live=PKG_STATUSES.map(s=>({s, n:list.filter(f=>pkgShownStatus(f)===s).length})).filter(c=>c.n);
       return `<button type="button" class="factory-card ${late?'late':''} ${state.prodFactory===name?'on':''}" data-name="${esc(name)}" onclick="setProdFactory(this)"><div class="fh"><b>${esc(name)}</b>${late?`<span class="badge badge-stage-wait">${late} 延期</span>`:`<span class="count">${list.length} 包</span>`}</div>
-        <div class="fac-bar">${live.map(c=>`<i class="s${c.i}" style="width:${(c.n/list.length*100).toFixed(2)}%"></i>`).join('')}</div>
-        <div class="fac-legend">${live.map(c=>`<span><i class="s${c.i}"></i>${esc(c.s)} <b>${c.n}</b></span>`).join('')}</div>
+        <div class="fac-legend">${live.map(c=>`<span>${esc(c.s)} <b>${c.n}</b></span>`).join('')}</div>
       </button>`;
     }).join('')}</div>`:`<div class="callout">还没有拆单包。打开项目详情，点「添加拆单包」。一个项目可以记多条，金额用来对账，不计入项目成本。</div>`}
     <div class="prod-board">
