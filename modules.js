@@ -69,17 +69,19 @@ function fieldError(id, msg){
 function clearField(id){const el=document.getElementById(id);if(el)el.classList.remove('has-error');}
 
 function isUntouched(c){return c.status!=='已流失' && !(c.follows&&c.follows.length) && !(c.contactNote&&String(c.contactNote).trim());}
+function customerSigned(c){return c.status==='已成交' || c.boardStage==='已成交' || CONTRACTS.some(p=>p.customerId===c.id && !p.lost && !p.ended);}
 function todayItems(){
   const items=[];
   customers.forEach(c=>{
-    if(isUntouched(c)) items.push({kind:'未首触', title:c.name, sub:`${c.id} · ${fmtPhone(c.phone)} · ${c.wechat} · ${c.city} · ${c.channel} · ${gradeLabel(c.intent)} · ${c.boardStage}`, detail:'还没有通话，也没有加微信。', owner:c.owner||'老板', view:'detail', id:c.id});
-    if(c.nextFollow && c.nextFollow.slice(0,10)<TODAY && c.status!=='已成交' && c.status!=='已流失') items.push({kind:'逾期跟进', title:c.name, sub:`${c.id} · 下次跟进 ${c.nextFollow}`, detail:'已过约定的跟进时间。', owner:c.owner||'老板', view:'detail', id:c.id});
+    if(c.status==='已流失'||c.boardStage==='流失'||customerSigned(c)) return;
+    if(isUntouched(c)) items.push({group:'customer', kind:'未首触', title:c.name, sub:`${c.id} · ${fmtPhone(c.phone)} · ${c.wechat} · ${c.city} · ${c.channel} · ${gradeLabel(c.intent)} · ${c.boardStage}`, detail:'还没有通话，也没有加微信。', owner:c.owner||'老板', view:'detail', id:c.id});
+    if(c.nextFollow && c.nextFollow.slice(0,10)<TODAY) items.push({group:'customer', kind:'逾期跟进', title:c.name, sub:`${c.id} · 下次跟进 ${c.nextFollow}`, detail:'已过约定的跟进时间。', owner:c.owner||'老板', view:'detail', id:c.id});
   });
   CONTRACTS.forEach(p=>{
-    if(p.action && p.action.status!=='已完成') items.push({kind:'项目事项', title:p.customerName, sub:`${p.id} · ${p.action.name}`, detail:p.action.blocker||'当前这一步还没完成。', owner:p.designer, view:'project', id:p.id});
+    if(p.ended||p.lost) return;
+    if(p.action && p.action.status!=='已完成') items.push({group:'project', kind:'项目事项', title:`${p.id} ${p.customerName}`, sub:p.action.name, detail:p.action.blocker||'当前这一步还没完成。', owner:p.designer||'—', view:'project', id:p.id});
   });
-  LEDGER.filter(x=>x.unpaid).forEach(x=>items.push({kind:'待付', title:x.kind, sub:`${x.project||'日常'} · ${money(x.amount)}`, detail:'尚未付出。', owner:'财务', view:'finance', id:''}));
-  EXPENSES.filter(x=>x.unpaid).forEach(x=>items.push({kind:'待付', title:x.category, sub:money(x.amount), detail:x.note||'日常开支尚未付出。', owner:'财务', view:'finance', id:''}));
+  LEDGER.filter(x=>x.unpaid&&x.project).forEach(x=>items.push({group:'project', kind:'待付', title:x.project, sub:`${x.kind} · ${money(x.amount)}`, detail:'这一单还有款没付出。', owner:'财务', view:'finance', id:''}));
   return items;
 }
 function workRows(){
@@ -145,18 +147,23 @@ function financeSummary(){
   };
 }
 
+function todayTable(list, who){
+  const rows=list.map(t=>`<tr><td>${esc(t.kind)}</td><td><strong>${esc(t.title)}</strong><div class="project-meta">${esc(t.sub)}</div></td><td>${esc(t.detail)}</td><td>${esc(t.owner)}</td><td><button class="btn btn-sm btn-primary" onclick="openWork('${t.view}','${t.id}')">去处理</button></td></tr>`).join('');
+  return `<div class="table-wrap"><table class="data"><thead><tr><th>事项</th><th>${who}</th><th>现在的情况</th><th>该谁处理</th><th class="col-ops">操作</th></tr></thead><tbody>
+    ${rows||`<tr><td colspan="5">这块今天没有要处理的</td></tr>`}
+  </tbody></table></div><div class="pager"><span class="info">共 ${list.length} 条</span></div>`;
+}
 function renderToday(){
   const all=todayItems();
-  const kinds=['全部',...new Set(all.map(t=>t.kind))];
-  const list=state.todayFilter==='全部'?all:all.filter(t=>t.kind===state.todayFilter);
+  const people=all.filter(t=>t.group==='customer');
+  const jobs=all.filter(t=>t.group==='project');
   pageShell(`
     <div class="block-title" style="margin-top:0">今日待办 ${all.length} 条 <button class="btn btn-default btn-sm" onclick="render()">刷新</button></div>
-    <p class="page-note">今天要处理的销售事项、项目事项和待付。点「去处理」进入对应的客户、项目或收支记账。待付里的日常开支和内部提成到收支记账处理，不进项目。</p>
-    <div class="mini-tabs">${kinds.map(k=>`<button class="filter-tab ${state.todayFilter===k?'active':''}" onclick="state.todayFilter='${k}';render()">${k}</button>`).join('')}</div>
-    <div class="table-wrap"><table class="data"><thead><tr><th>事项</th><th>客户或项目</th><th>现在的情况</th><th>该谁处理</th><th class="col-ops">操作</th></tr></thead><tbody>
-      ${list.map(t=>`<tr><td>${esc(t.kind)}</td><td><strong>${esc(t.title)}</strong><div class="project-meta">${esc(t.sub)}</div></td><td>${esc(t.detail)}</td><td>${esc(t.owner)}</td><td><button class="btn btn-sm btn-primary" onclick="openWork('${t.view}','${t.id}')">去处理</button></td></tr>`).join('')||'<tr><td colspan="5">这个分类今天没有事项</td></tr>'}
-    </tbody></table></div>
-    <div class="pager"><span class="info">共 ${list.length} 条</span></div>
+    <p class="page-note">上面是还没签约的客户，下面是已经立项的项目。点「去处理」进入这个客户或这个项目。没有挂在项目上的日常开支，到收支记账里看。</p>
+    <div class="block-title">未签约客户 ${people.length} 条</div>
+    ${todayTable(people,'客户')}
+    <div class="block-title">已签约项目 ${jobs.length} 条</div>
+    ${todayTable(jobs,'项目')}
   `);
 }
 
