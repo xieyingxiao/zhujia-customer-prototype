@@ -503,11 +503,15 @@ table.data tbody tr.row-watch:hover td,table.data tbody tr.row-watch:hover td.co
 .page-note{font-size:12.5px;color:var(--text-secondary);line-height:1.65;margin:0 0 14px;background:#fff;border:1px solid var(--border);border-radius:8px;padding:10px 12px}
 .block-title{font-size:15px;font-weight:600;margin:22px 0 10px;display:flex;align-items:center;justify-content:space-between;gap:8px}
 .today-split{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:16px;align-items:start}
+.prod-split{display:grid;grid-template-columns:minmax(320px,.9fr) minmax(0,1.2fr);gap:16px;align-items:start}
+.prod-split .panel{min-width:0}
+.prod-scroll{max-height:480px;overflow:auto}
+.prod-scroll thead th{position:sticky;top:0;z-index:2;background:#fff}
 .today-pane{min-width:0;background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px 16px}
 .today-pane .block-title{margin-top:0}
 .today-pane th.col-ops,.today-pane td.col-ops{position:sticky;right:0;z-index:2;background:#fff;box-shadow:-2px 0 4px rgba(0,0,0,.04)}
 .today-pane th.col-ops{background:#fafafa;z-index:3}
-@media(max-width:1100px){.today-split{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:1100px){.today-split,.prod-split{grid-template-columns:minmax(0,1fr)}}
 .mini-tabs{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
 .submod{display:flex;gap:4px;margin:0 0 16px;border-bottom:1px solid var(--border)}
 .submod button{background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-1px;padding:8px 14px;font-size:14px;color:var(--text-secondary);cursor:pointer}
@@ -765,6 +769,7 @@ tr.step-locked td{color:var(--text-muted)}
     <li>日常开支、内部提成，以及吴婷项目的资料、整改、变更，放了示例数据。开支和提成不进项目成本。林晓仍然没有拆单包</li>
     <li>生产协同用冯雪 HT-202611-003 对照各包状态：待开工、备货中、生产中、已完工、已到货，以及预测已过的延期。吴婷的包仍是全部齐套。包金额不进项目成本</li>
     <li>生产协同的工厂卡片只汇总各状态有几包。点一家工厂，下面的包表按这家筛。包表按预测日排，可再按状态和未齐筛选。齐套看板仍按项目看</li>
+    <li>齐套看板和拆单包并排。包表在自己的区域里滚动，包再多也不会把齐套看板顶到下面。窄屏时齐套看板在上</li>
     <li>记跟进可写方式/内容/下次时间，真追加</li>
     <li>建档打开不报错；失焦/提交才校验；重复提示</li>
     <li>批量建档三步：模板→上传→结果</li>
