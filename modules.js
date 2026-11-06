@@ -43,18 +43,18 @@ let RULES = [
   {name:'步骤停滞天数', value:'3', enabled:true}
 ];
 let ACCOUNTS = [
-  {account:'admin', name:'老板', role:'负责人', status:'已开通', modules:'首页看板、销售管理、项目管理、收支记账、规则设置', locked:true},
+  {account:'admin', name:'老板', role:'负责人', status:'已开通', modules:'首页看板、销售管理、项目管理、财务中心、规则设置', locked:true},
   {account:'design', name:'设计小王', role:'设计师', status:'已开通', modules:'首页看板、项目管理'},
   {account:'yanxuan-accept-assist', name:'助理小邓', role:'助理', status:'已开通', modules:'首页看板、销售管理、项目管理'},
   {account:'yanxuan-accept-design', name:'设计老张', role:'设计师', status:'已开通', modules:'首页看板、销售管理、项目管理'},
-  {account:'yanxuan-accept-finance', name:'财务小刘', role:'财务', status:'已开通', modules:'首页看板、销售管理、项目管理、收支记账、规则设置'},
+  {account:'yanxuan-accept-finance', name:'财务小刘', role:'财务', status:'已开通', modules:'首页看板、销售管理、项目管理、财务中心、规则设置'},
   {account:'yanxuan-accept-install', name:'安装师傅老赵', role:'安装队', status:'已开通', modules:'首页看板、项目管理'},
-  {account:'yanxuan-accept-off', name:'停用账号', role:'销售', status:'未开通', modules:'首页看板、销售管理、项目管理、收支记账、规则设置'},
-  {account:'yanxuan-accept-pm', name:'项目经理小张', role:'项目经理', status:'已开通', modules:'首页看板、销售管理、项目管理、收支记账'},
-  {account:'yanxuan-accept-sales', name:'销售小李', role:'销售', status:'已开通', modules:'首页看板、销售管理、项目管理、收支记账'}
+  {account:'yanxuan-accept-off', name:'停用账号', role:'销售', status:'未开通', modules:'首页看板、销售管理、项目管理、财务中心、规则设置'},
+  {account:'yanxuan-accept-pm', name:'项目经理小张', role:'项目经理', status:'已开通', modules:'首页看板、销售管理、项目管理、财务中心'},
+  {account:'yanxuan-accept-sales', name:'销售小李', role:'销售', status:'已开通', modules:'首页看板、销售管理、项目管理、财务中心'}
 ];
-const MODULE_OPTIONS = ['首页看板','销售管理','项目管理','收支记账','合作伙伴','规则设置'];
-const ROLE_MODULES = {负责人:MODULE_OPTIONS, 设计师:['首页看板','项目管理'], 助理:['首页看板','销售管理','项目管理'], 财务:['首页看板','销售管理','项目管理','收支记账','规则设置'], 安装队:['首页看板','项目管理'], 销售:['首页看板','销售管理','项目管理','收支记账','合作伙伴'], 项目经理:['首页看板','销售管理','项目管理','收支记账']};
+const MODULE_OPTIONS = ['首页看板','销售管理','项目管理','财务中心','合作伙伴','规则设置'];
+const ROLE_MODULES = {负责人:MODULE_OPTIONS, 设计师:['首页看板','项目管理'], 助理:['首页看板','销售管理','项目管理'], 财务:['首页看板','销售管理','项目管理','财务中心','规则设置'], 安装队:['首页看板','项目管理'], 销售:['首页看板','销售管理','项目管理','财务中心','合作伙伴'], 项目经理:['首页看板','销售管理','项目管理','财务中心']};
 
 function money(n){return Number(n||0).toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function ruleValue(name, fallback){const r=RULES.find(x=>x.name===name);if(!r||!r.enabled)return fallback;const n=Number(r.value);return Number.isFinite(n)?n:fallback;}
@@ -120,19 +120,19 @@ function renderHome(){
   const blocked=CONTRACTS.filter(p=>p.action&&String(p.action.blocker||'').indexOf('还要上传')===0).length;
   pageShell(`
     <div class="page-head">
-      <div><h1>首页看板</h1><p>统计截止 ${TODAY}。左边是还没签约的客户，右边是已经立项的项目。点「去处理」进入这个客户或这个项目。没有挂在项目上的日常开支，到收支记账里看。</p></div>
+      <div><h1>首页看板</h1><p>统计截止 ${TODAY}。左边是还没签约的客户，右边是已经立项的项目。点「去处理」进入这个客户或这个项目。没有挂在项目上的日常开支，到财务中心看。</p></div>
       <button class="btn btn-default" onclick="render()">刷新</button>
     </div>
     <div class="kpis">
       <button type="button" class="kpi" onclick="goView('project')"><div class="lab">在途项目</div><div class="val">${s.inFlight}</div><div class="sub">还没到售后</div></button>
       <button type="button" class="kpi" onclick="document.getElementById('homeToday').scrollIntoView({behavior:'smooth',block:'start'})"><div class="lab">待处理</div><div class="val">${all.length}</div><div class="sub">客户 ${people.length} · 项目 ${jobs.length}</div></button>
       <button type="button" class="kpi" onclick="goView('finance')"><div class="lab">本月净额</div><div class="val">${money(s.net)}</div><div class="sub">收入 ${money(s.income)} · 支出 ${money(s.pay)}</div></button>
-      <button type="button" class="kpi" onclick="goView('finance')"><div class="lab">待收</div><div class="val">${money(s.due)}</div><div class="sub">${s.dueCount} 个项目还没收齐</div></button>
+      <button type="button" class="kpi" onclick="goView('finance')"><div class="lab">待收</div><div class="val">${money(s.due)}</div><div class="sub">${s.dueCount} 个已签项目还没收齐</div></button>
     </div>
     <div class="kpis">
       <button type="button" class="kpi" onclick="goView('finance')"><div class="lab">累计已收款</div><div class="val">${money(s.received)}</div><div class="sub">${s.receivedCount} 条</div></button>
       <button type="button" class="kpi" onclick="goView('finance')"><div class="lab">本月收入</div><div class="val">${money(s.income)}</div><div class="sub">${s.incomeCount} 条</div></button>
-      <button type="button" class="kpi" onclick="goView('project')"><div class="lab">全款未收齐</div><div class="val">${s.unpaidCount}</div><div class="sub">已有合同金额还没收完</div></button>
+      <button type="button" class="kpi" onclick="goView('finance')"><div class="lab">全款未收齐</div><div class="val">${s.unpaidCount}</div><div class="sub">签完合同还没收完</div></button>
       <button type="button" class="kpi" onclick="goView('actions')"><div class="lab">当前卡点</div><div class="val">${blocked}</div><div class="sub">当前步骤还缺文件 · 待发提成 ${money(s.commission)}</div></button>
     </div>
     <div id="homeToday" class="block-title">今天要处理 ${all.length} 条</div>
@@ -162,15 +162,15 @@ function financeSummary(){
   const expensePaid=EXPENSES.filter(x=>!x.unpaid&&x.date.startsWith(month));
   const income=incomeRows.reduce((s,x)=>s+x.amount,0);
   const pay=payRows.reduce((s,x)=>s+x.amount,0)+expensePaid.reduce((s,x)=>s+x.amount,0);
-  const dueRows=CONTRACTS.filter(p=>p.due>0);
-  const unpaidProjects=CONTRACTS.filter(p=>p.amount>0&&p.due>0);
+  const dueRows=CONTRACTS.map(receivableOf).filter(r=>r&&r.open>0);
+  const unpaidProjects=dueRows;
   const pendingCommission=COMMISSIONS.filter(c=>c.status!=='已发');
   return {
     inFlight:CONTRACTS.filter(p=>!p.ended&&!p.lost&&p.stage!=='售后').length,
     unpaidCount:unpaidProjects.length,
     received:LEDGER.filter(x=>x.dir==='收款').reduce((s,x)=>s+x.amount,0),
     receivedCount:LEDGER.filter(x=>x.dir==='收款').length,
-    due:dueRows.reduce((s,p)=>s+p.due,0),
+    due:dueRows.reduce((s,r)=>s+r.open,0),
     dueCount:dueRows.length,
     income, incomeCount:incomeRows.length,
     pay, payCount:payRows.length+expensePaid.length,
@@ -222,7 +222,8 @@ const FINISH_HINT = {
   7:'完成时要填确认方式和确认日期。微信还要截图或链接。',
   9:'完成时要填确认方式和确认日期。微信还要截图或链接。',
   17:'完成时要填报价金额。客户签字时，合同金额按这份报价写入。',
-  18:'完成后，合同金额按最终报价写入。',
+  18:'完成后按合同金额生成一笔应收。签字前收到的钱冲进这笔应收。',
+  19:'未收要先在财务中心结清，才能完成。',
   24:'完成时要填安装日期、预计天数和现场电话。'
 };
 let stepTick = 0;
@@ -238,6 +239,12 @@ function blockerOf(p, step){
   const miss=missingSlots(p, step);
   if(miss.length) return '还要上传'+miss.join('、')+'。齐了才能点完成。';
   if((stepDef(step.seq).slots||[]).length) return '文件已经齐了，可以点完成。';
+  if(step.seq===19){
+    const rec=receivableOf(p);
+    if(!rec) return '还没签合同，没有应收款项。';
+    if(rec.open>0) return '还有未收 '+money(rec.open)+'。先到财务中心记下收款，再完成这一步。';
+    return '应收已经收齐，可以完成这一步。';
+  }
   return '可以处理这一步。';
 }
 function projectGroups(){
@@ -299,18 +306,63 @@ function markDone(p, step, by, note){
   step.by=by||'老板';
   step.at=stepNow();
   step.note=note||'';
-  if(step.seq===18){
-    const q=Number(p.quoteAmount)||0;
-    p.amount=q;
-    const got=LEDGER.filter(x=>x.project===p.id&&x.dir==='收款').reduce((s,x)=>s+Number(x.amount),0);
-    p.due=Math.round((q-got)*100)/100;
-  }
+  if(step.seq===18) p.amount=Number(p.quoteAmount)||0;
+  refreshDue(p);
   syncProject(p);
 }
 function showBlank(v){return v?esc(v):'未填';}
+function projectReceived(id){
+  return LEDGER.filter(x=>x.project===id&&x.dir==='收款').reduce((s,x)=>s+Number(x.amount),0);
+}
+function contractSigned(p){
+  return !!(p&&(p.steps||[]).some(s=>s.seq===18&&s.status==='已完成'));
+}
+function refreshDue(p){
+  if(!p) return;
+  const base=contractSigned(p)?Number(p.amount)||0:0;
+  p.due=Math.round((base-projectReceived(p.id))*100)/100;
+}
+function receivableOf(p){
+  if(!contractSigned(p)) return null;
+  const amount=Math.round((Number(p.amount)||0)*100)/100;
+  const got=Math.round(projectReceived(p.id)*100)/100;
+  const open=Math.round((amount-got)*100)/100;
+  const step=(p.steps||[]).find(s=>s.seq===18);
+  const status=open>0?'未收齐':open<0?'多收':'已收齐';
+  return {amount, got, open, status, signedAt:(step&&step.at)||''};
+}
+function dueLabel(p){
+  const rec=receivableOf(p);
+  return rec?money(rec.open):'未签约';
+}
+function arStatusBadge(status){
+  const cls=status==='已收齐'?'badge-stage-done':status==='多收'?'badge-stage':'badge-stage-wait';
+  return `<span class="badge ${cls}">${esc(status)}</span>`;
+}
 function contractText(p){
-  const signed=(p.steps||[]).some(s=>s.seq===18&&s.status==='已完成');
-  return signed?money(p.amount):'未签字';
+  return contractSigned(p)?money(p.amount):'未签字';
+}
+function receiptTable(p){
+  const rows=LEDGER.filter(x=>x.project===p.id&&x.dir==='收款');
+  if(!rows.length) return '<div class="empty-inline">还没有收款</div>';
+  const how=contractSigned(p)?'冲减应收':'预收';
+  return `<div class="table-wrap"><table class="data"><thead><tr><th>发生日</th><th>金额</th><th>说明</th><th>记法</th></tr></thead><tbody>
+    ${rows.map(x=>`<tr><td>${esc(x.date)}</td><td>${money(x.amount)}</td><td>${esc(x.subject||'项目收款')}</td><td>${how}</td></tr>`).join('')}
+  </tbody></table></div>`;
+}
+function receivableSection(p){
+  const got=projectReceived(p.id);
+  const rec=receivableOf(p);
+  if(!rec){
+    return `<div class="block-title">应收款项</div>
+      <div class="callout">还没签合同，不产生应收。完成「客户签字」之后，按合同金额生成一笔应收，已经收到的定金会冲进去。${got>0?'当前预收 '+money(got)+'。':''}</div>
+      ${receiptTable(p)}`;
+  }
+  const cls=rec.open>0?'risk':rec.open<0?'warn':'ok';
+  const tail=rec.open>0?'未收 '+money(rec.open)+'。':rec.open<0?'多收 '+money(-rec.open)+'。':'未收 0.00。';
+  return `<div class="block-title">应收款项</div>
+    <div class="callout ${cls}">${rec.status}。应收 ${money(rec.amount)}，已收 ${money(rec.got)}，${tail}签字日 ${esc((rec.signedAt||'').slice(0,10)||'—')}。</div>
+    ${receiptTable(p)}`;
 }
 function projectSubnav(active){
   const tabs=[['project','项目'],['actions','待办动作'],['production','生产协同']];
@@ -419,7 +471,7 @@ function renderProjects(){
       <label class="check-row"><input type="checkbox" ${state.showEnded?'checked':''} onchange="state.showEnded=this.checked;render()" /><span class="check"></span><span class="check-text"><span>看已结束和流失</span></span></label>
     </div></div>
     <div class="table-wrap"><table class="data"><thead><tr><th>项目</th><th>客户</th><th>设计师</th><th>客户编号</th><th>电话</th><th>地址</th><th>阶段</th><th>分组进度</th><th>订单总额</th><th>待收</th><th>工期</th><th class="col-ops">操作</th></tr></thead><tbody>
-      ${list.map(p=>`<tr onclick="goProject('${p.id}')"><td>${esc(p.id)}</td><td>${esc(p.customerName)}</td><td>${esc(p.designer)}</td><td>${esc(p.customerId)}</td><td class="phone">${fmtPhone(p.phone)}</td><td>${esc(p.address)}</td><td>${stageBadge(p.stage)}</td><td title="${esc(p.progress)}"><span class="ellipsis" style="max-width:220px">${esc(p.progress)}</span></td><td>${money(p.amount)}</td><td>${money(p.due)}</td><td>${p.days} 个工作日</td><td onclick="event.stopPropagation()"><button class="btn btn-sm btn-default" onclick="goProject('${p.id}')">打开</button></td></tr>`).join('')||'<tr><td colspan="12">没有项目</td></tr>'}
+      ${list.map(p=>`<tr onclick="goProject('${p.id}')"><td>${esc(p.id)}</td><td>${esc(p.customerName)}</td><td>${esc(p.designer)}</td><td>${esc(p.customerId)}</td><td class="phone">${fmtPhone(p.phone)}</td><td>${esc(p.address)}</td><td>${stageBadge(p.stage)}</td><td title="${esc(p.progress)}"><span class="ellipsis" style="max-width:220px">${esc(p.progress)}</span></td><td>${money(p.amount)}</td><td>${dueLabel(p)}</td><td>${p.days} 个工作日</td><td onclick="event.stopPropagation()"><button class="btn btn-sm btn-default" onclick="goProject('${p.id}')">打开</button></td></tr>`).join('')||'<tr><td colspan="12">没有项目</td></tr>'}
     </tbody></table></div>
     <div class="pager"><span class="info">共 ${list.length} 条</span></div>
     </div></div>
@@ -478,7 +530,7 @@ function renderProjectDetail(){
     </div>
     <div class="dchips">
       <div class="dchip"><span class="k">当前步骤</span><span class="v">${cur?esc(stepDef(cur.seq).name):'已走完'}</span></div>
-      <div class="dchip ${Number(p.due)>0?'risk':'ok'}"><span class="k">待收</span><span class="v">${money(p.due)}</span></div>
+      <div class="dchip ${receivableOf(p)&&receivableOf(p).open>0?'risk':'ok'}"><span class="k">${contractSigned(p)?'未收':'预收'}</span><span class="v">${contractSigned(p)?dueLabel(p):money(projectReceived(p.id))}</span></div>
       <div class="dchip"><span class="k">合同金额</span><span class="v">${contractText(p)}</span></div>
       <div class="dchip ${rate>0&&rate<25?'risk':''}"><span class="k">毛利率</span><span class="v">${rate.toFixed(1)}%</span></div>
       <div class="dchip"><span class="k">工期</span><span class="v">${p.days} 天</span></div>
@@ -491,7 +543,7 @@ function renderProjectDetail(){
       const cls=!cur?'done':(i<curI?'done':i===curI?'now':'');
       return `<div class="tl-step ${cls}"><span class="d"></span><span class="n">${esc(g.name)}</span><span class="t">${g.done}/${g.total}</span></div>`;
     }).join('')}</div>
-    ${p.lost?`<div class="banner-lost">这个项目已流失。步骤、文件和金额只供查看。收款和增项仍在收支记账里记。${p.lostReason?'原因：'+esc(p.lostReason):''}</div>`:`<div class="toolbar"><div class="toolbar-left">
+    ${p.lost?`<div class="banner-lost">这个项目已流失。步骤、文件和金额只供查看。收款和增项仍在财务中心记。${p.lostReason?'原因：'+esc(p.lostReason):''}</div>`:`<div class="toolbar"><div class="toolbar-left">
       <button class="btn btn-default" onclick="openSite('${p.id}')">修改现场</button>
       <button class="btn btn-default" onclick="openReconfirm('${p.id}')">重新确认</button>
       <button class="btn btn-default" onclick="openLost('${p.id}')">标流失</button>
@@ -505,7 +557,7 @@ function renderProjectDetail(){
       <div class="info-item"><label>地址</label><div class="val">${esc(p.address)}</div></div>
       <div class="info-item"><label>设计师</label><div class="val">${esc(p.designer||'—')}</div></div>
       <div class="info-item"><label>订单总额</label><div class="val">${money(p.amount)}</div></div>
-      <div class="info-item"><label>待收</label><div class="val">${money(p.due)}</div></div>
+      <div class="info-item"><label>${contractSigned(p)?'未收':'预收'}</label><div class="val">${contractSigned(p)?dueLabel(p):money(projectReceived(p.id))}</div></div>
       <div class="info-item"><label>合同金额</label><div class="val">${contractText(p)}</div></div>
       <div class="info-item"><label>工期</label><div class="val">${p.days} 个工作日</div></div>
       <div class="info-item"><label>承诺日</label><div class="val">${showBlank(p.promise)}</div></div>
@@ -522,12 +574,13 @@ function renderProjectDetail(){
       <div class="info-item"><label>毛利率</label><div class="val">${rate.toFixed(2)}%</div></div>
       <div class="info-item"><label>抽成</label><div class="val">${money(0)}</div></div>
     </div>
+    ${receivableSection(p)}
     <div class="group-chips">
       <button type="button" class="group-chip ${state.stepGroup==='全部'?'on':''}" onclick="state.stepGroup='全部';render()">全部 <b>${p.steps.filter(s=>s.status==='已完成').length}/${p.steps.length}</b></button>
       ${stats.map(g=>`<button type="button" class="group-chip ${state.stepGroup===g.name?'on':''}" onclick="state.stepGroup='${g.name}';render()">${g.name} <b>${g.done}/${g.total}</b></button>`).join('')}
     </div>
     <p class="page-note">${esc(p.progress)}</p>
-    <p class="page-note">步骤按顺序往下走。只有当前这一步能上传、完成或标不适用。没有上传按钮就不用文件。有上传按钮时，缺的文件传齐才能点完成。计划日可以改，预埋改的是到场日。日期过了还没做完，会写超了几天，并出现在首页看板。客户确认平面、客户确认立面要填确认方式；最终报价要填金额；安排安装要填日期、天数和现场电话。</p>
+    <p class="page-note">步骤按顺序往下走。只有当前这一步能上传、完成或标不适用。没有上传按钮就不用文件。有上传按钮时，缺的文件传齐才能点完成。计划日可以改，预埋改的是到场日。日期过了还没做完，会写超了几天，并出现在首页看板。客户确认平面、客户确认立面要填确认方式；最终报价要填金额；客户签字后按合同金额生成应收；收全款要等未收结清；安排安装要填日期、天数和现场电话。</p>
     <div class="table-wrap"><table class="data"><thead><tr><th>步骤</th><th>分组</th><th>岗位</th><th>状态</th><th>计划</th><th>说明</th><th class="col-ops">操作</th></tr></thead><tbody>
       ${rows.map(s=>{
         const def=stepDef(s.seq);
@@ -635,8 +688,8 @@ function submitStepFile(id){
   else p.files.push(rec);
   if(!prev&&amount>0){
     LEDGER.unshift({kind:'项目收款', dir:'收款', amount, subject:'定金', cost:false, date:TODAY, due:'', project:p.id, customer:'', unpaid:false});
-    p.due=Math.round((Number(p.due)-amount)*100)/100;
-    pushChange(p,'记账','未填','项目收款 '+money(amount));
+    refreshDue(p);
+    pushChange(p,'记账','未填', (contractSigned(p)?'冲减应收 ':'预收 ')+money(amount));
   }
   syncProject(p);
   toast(missingSlots(p, currentStep(p)||step).length?'已上传':'文件已经齐了，可以点完成');
@@ -653,10 +706,16 @@ function openFinish(id){
   if(def.finish==='quote'){openQuoteFinish(p, step);return;}
   if(def.finish==='install'){openInstallFinish(p, step);return;}
   if(step.seq===18&&!(Number(p.quoteAmount)>0)){toast('还没有最终报价');return;}
-  openModule('完成', `<p style="margin:0">完成「${esc(def.name)}」？</p>`, ()=>{
+  if(step.seq===19){
+    const rec=receivableOf(p);
+    if(!rec){toast('还没签合同，没有应收款项');return;}
+    if(rec.open>0){toast('还有未收 '+money(rec.open)+'。先到财务中心记下收款。');return;}
+  }
+  openModule('完成', `<p style="margin:0">完成「${esc(def.name)}」？</p>${step.seq===18?'<p class="page-note">确定后按最终报价生成应收款项。已经收到的定金会冲进这笔应收。</p>':''}`, ()=>{
     markDone(p, step, '老板', '');
     pushChange(p,'完成步骤','未开始', def.name);
-    toast(currentStep(p)?'已完成，进入下一步':'这一步已完成');
+    if(step.seq===18) toast('已签合同，生成应收 '+money(p.amount));
+    else toast(currentStep(p)?'已完成，进入下一步':'这一步已完成');
     render();
   });
 }
@@ -810,7 +869,7 @@ function openReconfirm(id){
   const arrived=p.steps.some(s=>s.seq===22&&s.status==='已完成');
   if(arrived){toast('货已到就不能用');return;}
   openModule('重新确认', `
-    <p class="page-note">填写原因后，客户签字和后面已完成的动作退回未开始。货已到就不能用。</p>
+    <p class="page-note">填写原因后，客户签字和后面已完成的动作退回未开始。应收一并撤销，已经收到的钱改记预收。货已到就不能用。</p>
     <div class="form-group" id="rcGroup"><label>原因 <span class="req">*</span></label>
       <textarea class="input" id="rcReason" placeholder="请填写原因"></textarea>
       <div class="form-error">请填写原因</div></div>
@@ -824,11 +883,8 @@ function openReconfirm(id){
         s.status='未开始';s.reason='';s.by='';s.at='';s.note='';
       }
     });
-    if(signed){
-      p.amount=0;
-      const got=LEDGER.filter(x=>x.project===p.id&&x.dir==='收款').reduce((sum,x)=>sum+Number(x.amount),0);
-      p.due=Math.round((0-got)*100)/100;
-    }
+    if(signed) p.amount=0;
+    refreshDue(p);
     syncProject(p);
     pushChange(p,'重新确认','已完成','退回未开始：'+reason);
     toast('已退回客户签字及后面的步骤');
@@ -947,7 +1003,7 @@ function deleteProjectFile(id, i){
 function openCreateProject(){
   const selectable=customers.filter(c=>c.serviceType!=='分发'&&c.boardStage!=='已分发'&&c.status!=='已流失');
   openModule('立项', `
-    <p class="page-note">可以选择已有客户，也可以直接新增。新增要填城市和渠道。已分发的客户不能立项。合同金额在客户签字时按最终报价写入。设计师在这里指定，设计动作只给这个人。定金在第一步上传定金合同时入账。</p>
+    <p class="page-note">可以选择已有客户，也可以直接新增。新增要填城市和渠道。已分发的客户不能立项。合同金额在客户签字时按最终报价写入，同时生成应收。设计师在这里指定，设计动作只给这个人。定金在第一步上传定金合同时入账，签字前只记预收。</p>
     <div class="form-group"><label>客户</label><div class="segment" id="pMode">
       <button type="button" class="active" data-v="old" onclick="setProjectMode(this)">选择已有</button>
       <button type="button" data-v="new" onclick="setProjectMode(this)">直接新增</button>
@@ -1040,24 +1096,40 @@ function submitProject(){
 function renderFinance(){
   const s=financeSummary();
   const low=ruleValue('毛利率偏低线',25);
-  const margins=CONTRACTS.filter(p=>Number(p.amount)>0).map(p=>{
+  const margins=CONTRACTS.filter(p=>contractSigned(p)&&Number(p.amount)>0).map(p=>{
     const cost=projectCost(p.id);
     const rate=Number(p.amount)?(Number(p.amount)-cost)/Number(p.amount)*100:0;
     return {p, cost, rate};
   });
+  const recs=CONTRACTS.map(p=>({p, rec:receivableOf(p)})).filter(x=>x.rec);
+  const unsigned=CONTRACTS.filter(p=>!contractSigned(p));
+  const arAmount=recs.reduce((sum,x)=>sum+x.rec.amount,0);
   pageShell(`
-    <div class="page-head"><div><h1>收支记账</h1><p>这单收了多少、付了多少。项目列用项目号。统计截止 ${TODAY}。</p></div>
+    <div class="page-head"><div><h1>财务中心</h1><p>客户签字之后才有应收。签字前收到的钱记成预收，签字当天冲进这笔应收。统计截止 ${TODAY}。</p></div>
       <button class="btn btn-primary" onclick="openLedger()">记账</button></div>
     <div class="kpi-grid">
+      <div class="kpi"><div class="n">${money(arAmount)}</div><div class="l">应收总额</div></div>
+      <div class="kpi"><div class="n">${money(s.due)}</div><div class="l">未收</div></div>
       <div class="kpi"><div class="n">${money(s.income)}</div><div class="l">本月收入</div></div>
-      <div class="kpi"><div class="n">${money(s.pay)}</div><div class="l">本月付款</div></div>
-      <div class="kpi"><div class="n">${money(EXPENSES.filter(x=>!x.unpaid&&x.date.startsWith(TODAY.slice(0,7))).reduce((a,x)=>a+x.amount,0))}</div><div class="l">本月开支</div></div>
       <div class="kpi"><div class="n">${money(s.net)}</div><div class="l">本月净额</div></div>
     </div>
-    <div class="panel" style="margin-bottom:14px"><div class="panel-hd"><h3>项目毛利</h3><span class="meta">订单总额减计入成本的付款。低于 ${low}% 用橙色条</span></div><div class="panel-body">
+    <div class="kpi-grid">
+      <div class="kpi"><div class="n">${money(s.pay)}</div><div class="l">本月付款</div></div>
+      <div class="kpi"><div class="n">${money(EXPENSES.filter(x=>!x.unpaid&&x.date.startsWith(TODAY.slice(0,7))).reduce((a,x)=>a+x.amount,0))}</div><div class="l">本月开支</div></div>
+      <div class="kpi"><div class="n">${money(s.received)}</div><div class="l">累计已收款</div></div>
+      <div class="kpi"><div class="n">${recs.filter(x=>x.rec.status==='已收齐').length}</div><div class="l">已收齐</div></div>
+    </div>
+    <div class="block-title">应收款项</div>
+    <p class="page-note">只列出已经完成「客户签字」的项目。应收金额等于合同金额，已收包含签字前的定金。未收大于 0 时，项目里的「收全款」还不能完成。</p>
+    <div class="table-wrap"><table class="data"><thead><tr><th>项目</th><th>客户</th><th>签字日</th><th>应收</th><th>已收</th><th>未收</th><th>状态</th></tr></thead><tbody>
+      ${recs.map(x=>`<tr onclick="goProject('${x.p.id}')"><td>${esc(x.p.id)}</td><td>${esc(x.p.customerName)}</td><td>${esc((x.rec.signedAt||'').slice(0,10)||'—')}</td><td>${money(x.rec.amount)}</td><td>${money(x.rec.got)}</td><td>${money(x.rec.open)}</td><td>${arStatusBadge(x.rec.status)}</td></tr>`).join('')||'<tr><td colspan="7">还没有签完合同的项目</td></tr>'}
+    </tbody></table></div>
+    ${unsigned.length?`<div class="callout" style="margin-top:12px">${unsigned.map(p=>{const got=projectReceived(p.id);return esc(p.customerName)+' '+esc(p.id)+' 还没签合同，不产生应收'+(got>0?'。已收 '+money(got)+' 先记预收':'');}).join('<br>')}</div>`:''}
+    <div class="panel" style="margin:14px 0"><div class="panel-hd"><h3>项目毛利</h3><span class="meta">只算已签字的项目。订单总额减计入成本的付款。低于 ${low}% 用橙色条</span></div><div class="panel-body">
       ${margins.length?margins.map(m=>`<div class="bar-row"><div class="bar-lab" title="${esc(m.p.id)}">${esc(m.p.customerName)}</div><div class="bar-track"><i class="${m.rate<low?'risk':''}" style="width:${Math.max(0,Math.min(100,m.rate)).toFixed(1)}%"></i></div><div class="bar-val">${m.rate.toFixed(1)}%</div></div>`).join(''):'<div class="empty-inline">还没有已签字的项目金额</div>'}
     </div></div>
-    <p class="page-note">待收待付记在下面。合同金额在客户签字时按最终报价写入。</p>
+    <div class="block-title">收支流水</div>
+    <p class="page-note">项目列用项目号。收款在签字前记预收，签字后冲减上面的应收。</p>
     <div class="table-wrap"><table class="data"><thead><tr><th>种类</th><th>方向</th><th>金额</th><th>科目</th><th>计入成本</th><th>发生日</th><th>项目</th><th>尚未付出</th></tr></thead><tbody>
       ${LEDGER.map(x=>`<tr><td>${esc(x.kind)}</td><td>${esc(x.dir)}</td><td>${money(x.amount)}</td><td>${esc(x.subject||'—')}</td><td>${x.cost?'是':'—'}</td><td>${esc(x.date)}</td><td>${esc(x.project||'—')}</td><td>${x.unpaid?'是':'—'}</td></tr>`).join('')}
     </tbody></table></div>
@@ -1092,8 +1164,12 @@ function openLedger(){
     const dir=kind==='项目付款'?'付款':'收款';
     LEDGER.unshift({kind, dir, amount, subject:dir==='付款'?document.getElementById('lSubject').value:'', cost:dir==='付款'&&document.getElementById('lCost').checked, date:document.getElementById('lDate').value||TODAY, due:'', project, customer:'', unpaid:false});
     const p=CONTRACTS.find(x=>x.id===project);
-    if(p&&dir==='收款') p.due=Math.round((p.due-amount)*100)/100;
-    toast('已记账');render();
+    if(p&&dir==='收款') refreshDue(p);
+    const rec=p&&receivableOf(p);
+    if(dir==='收款'&&p&&!contractSigned(p)) toast('已记下预收。签完合同后冲进应收。');
+    else if(dir==='收款'&&rec) toast(rec.open>0?'已冲减应收，还剩 '+money(rec.open):'已冲减应收');
+    else toast('已记账');
+    render();
   });
 }
 function openGoods(){
