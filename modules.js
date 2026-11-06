@@ -55,7 +55,10 @@ function pageShell(html){
 function openModule(title, body, onOk){
   document.getElementById('moduleTitle').textContent=title;
   document.getElementById('moduleBody').innerHTML=body;
-  document.getElementById('moduleOk').onclick=()=>{if(onOk()!==false)closeModal('moduleModal');};
+  const ok=document.getElementById('moduleOk');
+  ok.textContent='确定';
+  ok.disabled=false;
+  ok.onclick=()=>{if(onOk()!==false)closeModal('moduleModal');};
   openModal('moduleModal');
 }
 function fieldError(id, msg){

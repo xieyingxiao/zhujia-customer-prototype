@@ -74,6 +74,7 @@ a:hover{text-decoration:underline}
 .btn-ghost{background:transparent;color:var(--text-secondary);border-color:transparent;padding:0 8px}
 .btn-ghost:hover:not(:disabled){background:var(--border-light);color:var(--text)}
 .btn-text{background:transparent;color:var(--primary);height:auto;padding:2px 4px}
+.btn-text.danger{color:var(--danger)}
 .btn-text:hover{text-decoration:underline}
 .btn-icon{width:32px;padding:0;background:#fff;border:1px solid var(--border);color:var(--text-secondary)}
 .btn-icon:hover:not(:disabled){border-color:var(--primary);color:var(--primary)}
@@ -216,6 +217,9 @@ tr:hover .copy-btn,.phone-cell:hover .copy-btn,.wx-cell:hover .copy-btn,.card:ho
 .section-title{font-size:14px;font-weight:600;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between}
 .drawing-box{border:1px dashed var(--border);border-radius:8px;padding:20px;display:flex;align-items:center;justify-content:space-between;gap:16px;background:#fafafa}
 .drawing-box p{color:var(--text-secondary);font-size:13px}
+.preview-image{max-width:100%;max-height:62vh;display:block;margin:0 auto}
+.preview-frame{width:100%;height:62vh;border:0;background:var(--bg)}
+.modal-preview{max-width:760px}
 .timeline{position:relative;padding-left:20px}
 .timeline::before{content:'';position:absolute;left:6px;top:8px;bottom:8px;width:2px;background:var(--border)}
 .tl-item{position:relative;padding:0 0 20px 16px}
@@ -613,6 +617,13 @@ textarea.input{height:auto;min-height:88px;padding:10px 12px;resize:vertical;lin
     <div class="modal-footer"><button class="btn btn-default" onclick="closeModal('moduleModal')">取消</button><button class="btn btn-primary" id="moduleOk">确定</button></div>
   </div>
 </div>
+<div class="overlay" id="previewModal">
+  <div class="modal modal-preview" role="dialog">
+    <div class="modal-header"><h2 id="previewTitle">预览</h2><button class="modal-close" onclick="closeModal('previewModal')" aria-label="关闭"><svg class="ico-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>
+    <div class="modal-body" id="previewBody"></div>
+    <div class="modal-footer"><button class="btn btn-default" onclick="closeModal('previewModal')">关闭</button><button class="btn btn-primary" onclick="downloadDrawing()">下载</button></div>
+  </div>
+</div>
 <div class="toast-wrap" id="toastWrap"></div>
 <div class="changelog" id="changelog">
   <div class="changelog-h"><span>本版改动说明</span><button class="modal-close" onclick="document.getElementById('changelog').classList.add('hidden')" aria-label="关闭"><svg class="ico-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>
@@ -630,6 +641,7 @@ textarea.input{height:auto;min-height:88px;padding:10px 12px;resize:vertical;lin
     <li>分发：不可服务只保留超出半径和其他，从合作伙伴名录里多选；确定后服务类型变分发并记入时间线</li>
     <li>合作伙伴单独成页：添加、编辑、停用、删除。停用后不再出现在分发里，已经分出的客户仍保留名字</li>
     <li>邀约、到店先弹出确认：到店时间必填；到店还可以填接待方式和接待人</li>
+    <li>上传图纸先选类型和文件。一位客户只留一张，再传会换掉原来的。可以预览和删除</li>
     <li>记跟进可写方式/内容/下次时间，真追加</li>
     <li>建档打开不报错；失焦/提交才校验；重复提示</li>
     <li>批量建档三步：模板→上传→结果</li>
@@ -649,14 +661,14 @@ let customers = [
       {method:'微信',content:'已通话，已加微信。客户表示周末有空，可约到店看样板。',time:'2026-11-04 17:57',author:'老板',next:'2026-11-05 10:00'},
       {method:'电话',content:'首次外呼接通，介绍了住家研选服务，客户有装修意向，约微信详聊。',time:'2026-11-04 15:20',author:'老板',next:null}
     ], visits:[], projects:[]},
-  {id:'KH-2026-002',name:'林晓',phone:'13800001002',wechat:'wx_linxiao',city:'成都',source:'线上',channel:'抖音视频',intent:'B',status:'已成交',points:100,owner:'老板',serviceType:'自营',dealers:[],distributeReason:'',nextFollow:null,lastFollow:'2026-10-28 14:00',contactNote:'已通话 · 已加微信',hasDrawing:true,reception:6,follows:[{method:'到店',content:'签约完成，进入施工排期。',time:'2026-10-28 14:00',author:'老板',next:null}],visits:[{time:'2026-10-20',note:'到店看样板间'}],
+  {id:'KH-2026-002',name:'林晓',phone:'13800001002',wechat:'wx_linxiao',city:'成都',source:'线上',channel:'抖音视频',intent:'B',status:'已成交',points:100,owner:'老板',serviceType:'自营',dealers:[],distributeReason:'',nextFollow:null,lastFollow:'2026-10-28 14:00',contactNote:'已通话 · 已加微信',hasDrawing:true,drawing:{slot:'户型图',name:'林晓-户型图.pdf',type:'application/pdf',url:''},reception:6,follows:[{method:'到店',content:'签约完成，进入施工排期。',time:'2026-10-28 14:00',author:'老板',next:null}],visits:[{time:'2026-10-20',note:'到店看样板间'}],
     projects:[
       {id:'XM-2026-018',name:'林晓 · 麓山全屋',community:'麓山国际',room:'3-1-1802',layout:'三室两厅',budget:'28.6万',stage:'安装中',owner:'老板'},
       {id:'XM-2026-027',name:'林晓 · 次卧加柜',community:'麓山国际',room:'3-1-1802',layout:'次卧',budget:'2.4万',stage:'平面待确认',owner:'老板'}
     ]},
   {id:'KH-2026-003',name:'赵敏',phone:'13800001003',wechat:'wx_zhaomin',city:'杭州',source:'线上',channel:'小红书视频',intent:'C',status:'新线索',points:50,owner:'老板',serviceType:'自营',dealers:[],distributeReason:'',nextFollow:'2026-11-05 15:00',lastFollow:null,contactNote:'',hasDrawing:false,reception:1,follows:[],visits:[],projects:[]},
   {id:'KH-2026-004',name:'周凯',phone:'13800001004',wechat:'wx_zhoukai',city:'武汉',source:'线上',channel:'视频号',intent:'A',status:'新线索',points:150,owner:'小王',serviceType:'分发',dealers:['武汉邻里装'],distributeReason:'超出服务半径',nextFollow:'2026-11-06 09:30',lastFollow:null,contactNote:'',hasDrawing:false,reception:1,follows:[],visits:[],projects:[]},
-  {id:'KH-2026-005',name:'吴婷',phone:'13800001005',wechat:'wx_wuting',city:'西安',source:'线上',channel:'豆包',intent:'B',status:'已成交',points:100,owner:'老板',serviceType:'自营',dealers:[],distributeReason:'',nextFollow:null,lastFollow:'2026-10-15 11:00',contactNote:'已通话 · 已加微信',hasDrawing:true,reception:6,follows:[],visits:[],
+  {id:'KH-2026-005',name:'吴婷',phone:'13800001005',wechat:'wx_wuting',city:'西安',source:'线上',channel:'豆包',intent:'B',status:'已成交',points:100,owner:'老板',serviceType:'自营',dealers:[],distributeReason:'',nextFollow:null,lastFollow:'2026-10-15 11:00',contactNote:'已通话 · 已加微信',hasDrawing:true,drawing:{slot:'施工图',name:'吴婷-施工图.jpg',type:'image/jpeg',url:''},reception:6,follows:[],visits:[],
     projects:[{id:'XM-2026-009',name:'吴婷 · 曲江定制',community:'曲江公馆',room:'7-2-901',layout:'两室一厅',budget:'16.8万',stage:'已验收',owner:'老板'}]},
   {id:'KH-2026-006',name:'郑浩',phone:'13800001006',wechat:'wx_zhenghao',city:'南京',source:'线下',channel:'老客户转介绍',intent:'C',status:'新线索',points:50,owner:'小李',serviceType:'自营',dealers:[],distributeReason:'',nextFollow:'2026-11-03 16:00',lastFollow:null,contactNote:'',hasDrawing:false,reception:1,follows:[],visits:[],projects:[]},
   {id:'KH-2026-007',name:'孙莉',phone:'13800001007',wechat:'wx_sunli',city:'长沙',source:'线下',channel:'设计师/前端合作',intent:'',status:'新线索',points:null,owner:'老板',serviceType:'自营',dealers:[],distributeReason:'',nextFollow:'2026-11-07 10:00',lastFollow:null,contactNote:'',hasDrawing:false,reception:1,follows:[],visits:[],projects:[]},
@@ -908,8 +920,8 @@ function renderDetail(){
       if(n===3) action=`<div class="step-action"><button class="btn btn-sm ${cls==='current'?'btn-primary':'btn-default'}" onclick="openInvite()">邀约</button></div>`;
       if(n===4) action=`<div class="step-action"><button class="btn btn-sm ${cls==='current'?'btn-primary':'btn-default'}" onclick="openVisit()">到店</button></div>`;
       if(n===5 && c.quote!=='不做'){
-        const ready=c.hasDrawing && cls==='current';
-        action=`<div class="step-action"><button class="btn btn-sm btn-primary" ${ready?'':'disabled title="'+(c.hasDrawing?'先完成前面的接待':'先上传图纸')+'"'} onclick="markQuoteSent()">预算已发</button><button class="btn btn-sm btn-default" onclick="openSkipQuote()">不做</button></div>`;
+        const ready=!!c.drawing && cls==='current';
+        action=`<div class="step-action"><button class="btn btn-sm btn-primary" ${ready?'':'disabled title="'+(c.drawing?'先完成前面的接待':'先上传图纸')+'"'} onclick="markQuoteSent()">预算已发</button><button class="btn btn-sm btn-default" onclick="openSkipQuote()">不做</button></div>`;
       }
     }
     return `<div class="step ${cls}"><div class="num">${n}</div><div><div class="name">${name}</div><div class="meta">${meta}</div>${action}</div></div>`;
@@ -954,10 +966,8 @@ function renderDetail(){
       <div class="section"><div class="section-title">接待进度 <span style="font-weight:400;color:var(--text-muted);font-size:12px">${Math.min(c.reception,STEPS.length)}/${STEPS.length}</span></div><div class="steps">${stepsHtml}</div></div>
       <div class="detail-grid">
         <div>
-          <div class="section"><div class="section-title">图纸</div>
-            <div class="drawing-box"><p>${c.hasDrawing?'已上传户型图。':'还没有户型图或施工图。预报价之前要先传一张。'}</p>
-              <button class="btn btn-default" onclick="uploadDrawing()">上传图纸</button></div>
-            ${!c.hasDrawing?`<p style="font-size:12px;color:var(--text-muted);margin-top:8px">「预算已发」按钮在上传图纸前不可用。</p>`:''}
+          <div class="section"><div class="section-title">图纸 <button class="btn btn-default btn-sm" onclick="openDrawing()">上传图纸</button></div>
+            ${c.drawing?`<div class="table-wrap"><table class="data"><thead><tr><th>类型</th><th>文件</th><th>操作</th></tr></thead><tbody><tr><td>${esc(c.drawing.slot)}</td><td>${esc(c.drawing.name)}</td><td><button class="btn btn-text btn-sm" onclick="previewDrawing()">预览</button><button class="btn btn-text btn-sm danger" onclick="deleteDrawing()">删除</button></td></tr></tbody></table></div>`:`<p style="color:var(--text-secondary);font-size:13px;margin:0">还没有户型图或施工图。预报价之前要先传一张。</p><p style="font-size:12px;color:var(--text-muted);margin-top:8px">「预算已发」按钮在上传图纸前不可用。</p>`}
           </div>
           <div class="section"><div class="section-title">到店记录</div>
             ${c.visits.length?c.visits.map(v=>`<div style="padding:10px;background:var(--bg);border-radius:6px;margin-bottom:8px;font-size:13px">${esc(v.time)} · ${esc(v.note)}</div>`).join(''):
@@ -1139,13 +1149,88 @@ function openVisit(){
     toast('已记录到店');render();
   });
 }
-function uploadDrawing(){
+function drawingKind(type, name){
+  const t=String(type||'').toLowerCase();
+  const n=String(name||'').toLowerCase();
+  if(t.startsWith('image/')||/\.(png|jpe?g|gif|webp|bmp)$/.test(n)) return 'image';
+  if(t.includes('pdf')||n.endsWith('.pdf')) return 'pdf';
+  return 'other';
+}
+function openDrawing(){
   const c=customers.find(x=>x.id===state.detailId);if(!c)return;
-  c.hasDrawing=true;toast('图纸已上传');render();
+  const slot=c.drawing?c.drawing.slot:'户型图';
+  openModule('上传图纸', `
+    <div class="form-group"><label>图纸类型</label>
+      <select class="input select" id="drawSlot" style="width:160px">
+        <option ${slot==='户型图'?'selected':''}>户型图</option>
+        <option ${slot==='施工图'?'selected':''}>施工图</option>
+      </select>
+    </div>
+    <div class="form-group"><label>文件</label>
+      <input id="drawFile" type="file" onchange="onDrawFile()" />
+      <div class="form-error" id="drawFileErr" style="display:block">请选择文件</div>
+      <p class="page-note" id="drawReplace" style="display:none;margin:8px 0 0">再传会换成这一张。原来的文件会删掉。</p>
+    </div>
+  `, () => {
+    const input=document.getElementById('drawFile');
+    const file=input&&input.files&&input.files[0];
+    if(!file){onDrawFile();return false;}
+    if(c.drawing&&c.drawing.url) URL.revokeObjectURL(c.drawing.url);
+    c.drawing={slot:document.getElementById('drawSlot').value, name:file.name, type:file.type||'', url:URL.createObjectURL(file)};
+    c.hasDrawing=true;
+    toast('已上传图纸');
+    render();
+  });
+  const ok=document.getElementById('moduleOk');
+  ok.textContent='上传';
+  ok.disabled=true;
+}
+function onDrawFile(){
+  const input=document.getElementById('drawFile');
+  const file=input&&input.files&&input.files[0];
+  const err=document.getElementById('drawFileErr');
+  const rep=document.getElementById('drawReplace');
+  const ok=document.getElementById('moduleOk');
+  const c=customers.find(x=>x.id===state.detailId);
+  if(err) err.style.display=file?'none':'block';
+  if(rep) rep.style.display=file&&c&&c.drawing?'block':'none';
+  if(ok) ok.disabled=!file;
+}
+function previewDrawing(){
+  const c=customers.find(x=>x.id===state.detailId);if(!c||!c.drawing)return;
+  const d=c.drawing;
+  const kind=drawingKind(d.type, d.name);
+  document.getElementById('previewTitle').textContent=d.name||'预览';
+  const body=document.getElementById('previewBody');
+  if(kind==='image'&&d.url) body.innerHTML=`<img class="preview-image" alt="" src="${d.url}">`;
+  else if(kind==='pdf'&&d.url) body.innerHTML=`<iframe class="preview-frame" title="预览" src="${d.url}"></iframe>`;
+  else body.textContent='这个格式不能在页面里看，可以下载。';
+  openModal('previewModal');
+}
+function downloadDrawing(){
+  const c=customers.find(x=>x.id===state.detailId);if(!c||!c.drawing)return;
+  const a=document.createElement('a');
+  let made='';
+  if(c.drawing.url) a.href=c.drawing.url;
+  else {made=URL.createObjectURL(new Blob(['原型示意文件'],{type:'text/plain'}));a.href=made;}
+  a.download=c.drawing.name||'file';
+  a.click();
+  if(made) setTimeout(()=>URL.revokeObjectURL(made), 1000);
+}
+function deleteDrawing(){
+  const c=customers.find(x=>x.id===state.detailId);if(!c||!c.drawing)return;
+  const name=c.drawing.name||'这张图纸';
+  openModule('删除图纸', `<p style="margin:0">删除「${esc(name)}」？</p>`, ()=>{
+    if(c.drawing&&c.drawing.url) URL.revokeObjectURL(c.drawing.url);
+    c.drawing=null;
+    c.hasDrawing=false;
+    toast('已删除');
+    render();
+  });
 }
 function markQuoteSent(){
   const c=customers.find(x=>x.id===state.detailId);if(!c)return;
-  if(!c.hasDrawing){toast('先上传图纸');return;}
+  if(!c.drawing){toast('先上传图纸');return;}
   if(!advanceReception(5))return;
   c.quote='已发';c.quoteSkipReason='';
   toast('预算已发');render();
