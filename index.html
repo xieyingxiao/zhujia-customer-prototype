@@ -490,9 +490,15 @@ table.data tbody tr.row-watch:hover td,table.data tbody tr.row-watch:hover td.co
 .tl-step .n{font-size:12.5px;font-weight:500;display:block}
 .tl-step.now .n{color:var(--danger)}
 .tl-step .t{font-size:11px;color:var(--text-muted)}
-.factory-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-bottom:16px}
-.factory-card{padding:14px;background:#fff;border:1px solid var(--border);border-radius:10px}
-.factory-card .fh{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.factory-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;margin-bottom:16px}
+.factory-card{padding:14px;background:#fff;border:1px solid var(--border);border-radius:10px;cursor:pointer;text-align:left;width:100%;font:inherit;color:inherit}
+.factory-card.on{border-color:var(--primary);box-shadow:0 0 0 1px var(--primary)}
+.factory-card .fh{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;gap:8px}
+.fac-counts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px 10px;margin-top:10px}
+.fac-counts .k{display:block;font-size:11px;color:var(--text-muted)}
+.fac-counts .n{font-size:14px;font-weight:600;font-variant-numeric:tabular-nums}
+.fac-counts .hot .n{color:var(--danger)}
+.fac-counts .zero .n{color:var(--text-muted);font-weight:500}
 .pkg-mini{padding:8px 0;border-top:1px solid var(--border-light);font-size:12.5px}
 .page-note{font-size:12.5px;color:var(--text-secondary);line-height:1.65;margin:0 0 14px;background:#fff;border:1px solid var(--border);border-radius:8px;padding:10px 12px}
 .block-title{font-size:15px;font-weight:600;margin:22px 0 10px;display:flex;align-items:center;justify-content:space-between;gap:8px}
@@ -758,6 +764,7 @@ tr.step-locked td{color:var(--text-muted)}
     <li>逾期、缺文件、未收和毛利异常用暖色标出。数字是 0、已经收齐的，仍是白底</li>
     <li>日常开支、内部提成，以及吴婷项目的资料、整改、变更，放了示例数据。开支和提成不进项目成本。林晓仍然没有拆单包</li>
     <li>生产协同用冯雪 HT-202611-003 对照各包状态：待开工、备货中、生产中、已完工、已到货，以及预测已过的延期。吴婷的包仍是全部齐套。包金额不进项目成本</li>
+    <li>生产协同的工厂卡片只汇总各状态有几包。点一家工厂，下面的包表按这家筛。包表按预测日排，可再按状态和未齐筛选。齐套看板仍按项目看</li>
     <li>记跟进可写方式/内容/下次时间，真追加</li>
     <li>建档打开不报错；失焦/提交才校验；重复提示</li>
     <li>批量建档三步：模板→上传→结果</li>
@@ -792,7 +799,7 @@ let customers = [
   {id:'KH-2026-009',name:'冯雪',phone:'13800001009',wechat:'wx_fengxue',city:'苏州',source:'线下',channel:'自然到店/来电',intent:'B',status:'已成交',points:100,owner:'老板',serviceType:'自营',dealers:[],distributeReason:'',nextFollow:null,lastFollow:'2026-11-02 09:30',contactNote:'已通话 · 已加微信',hasDrawing:true,drawing:{slot:'户型图',name:'冯雪-户型图.jpg',type:'image/jpeg',url:''},reception:5,follows:[{method:'到店',content:'到店确认平面后签约。',time:'2026-10-20 11:00',author:'老板',next:null}],projects:[]},
   {id:'KH-2026-010',name:'韩磊',phone:'13800001010',wechat:'wx_hanlei',city:'昆明',source:'线上',channel:'抖音直播',intent:'C',status:'新线索',points:50,owner:'小李',serviceType:'分发',dealers:['昆明暖居'],distributeReason:'超出服务半径',nextFollow:'2026-11-06 18:00',lastFollow:null,contactNote:'',hasDrawing:false,reception:1,follows:[],projects:[]}
 ];
-let state = {view:'list',detailId:null,projectId:null,filterTab:'全部',search:'',intentFilter:'',sourceFilter:'',stageFilter:'',sortKey:'nextFollow',sortDir:'asc',followTargetId:null,batchStep:1,listScroll:0,todayFilter:'全部',actionFilter:'全部',showEnded:false,dealerQ:''};
+let state = {view:'list',detailId:null,projectId:null,filterTab:'全部',search:'',intentFilter:'',sourceFilter:'',stageFilter:'',sortKey:'nextFollow',sortDir:'asc',followTargetId:null,batchStep:1,listScroll:0,todayFilter:'全部',actionFilter:'全部',showEnded:false,dealerQ:'',prodFilter:'全部',prodFactory:'',prodStatus:'全部',prodOpen:false};
 customers.forEach(c=>{
   if(c.status==='已成交') c.boardStage='已成交';
   else if(c.status==='已流失') c.boardStage='流失';
