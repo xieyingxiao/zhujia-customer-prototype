@@ -32,18 +32,18 @@ let RULES = [
   {name:'步骤停滞天数', value:'3', enabled:true}
 ];
 let ACCOUNTS = [
-  {account:'admin', name:'老板', role:'负责人', status:'已开通', modules:'今日待办、待办动作、销售管理、项目合同、收支记账、经营看板、规则设置', locked:true},
-  {account:'design', name:'设计小王', role:'设计师', status:'已开通', modules:'今日待办、待办动作、项目合同'},
-  {account:'yanxuan-accept-assist', name:'助理小邓', role:'助理', status:'已开通', modules:'今日待办、待办动作、销售管理、项目合同'},
-  {account:'yanxuan-accept-design', name:'设计老张', role:'设计师', status:'已开通', modules:'今日待办、待办动作、销售管理、项目合同、经营看板'},
-  {account:'yanxuan-accept-finance', name:'财务小刘', role:'财务', status:'已开通', modules:'今日待办、销售管理、项目合同、收支记账、经营看板、规则设置'},
-  {account:'yanxuan-accept-install', name:'安装师傅老赵', role:'安装队', status:'已开通', modules:'今日待办、待办动作、项目合同'},
-  {account:'yanxuan-accept-off', name:'停用账号', role:'销售', status:'未开通', modules:'今日待办、待办动作、销售管理、项目合同、收支记账、经营看板、规则设置'},
-  {account:'yanxuan-accept-pm', name:'项目经理小张', role:'项目经理', status:'已开通', modules:'今日待办、待办动作、销售管理、项目合同、收支记账、经营看板'},
-  {account:'yanxuan-accept-sales', name:'销售小李', role:'销售', status:'已开通', modules:'今日待办、待办动作、销售管理、项目合同、收支记账、经营看板'}
+  {account:'admin', name:'老板', role:'负责人', status:'已开通', modules:'今日待办、销售管理、项目管理、收支记账、经营看板、规则设置', locked:true},
+  {account:'design', name:'设计小王', role:'设计师', status:'已开通', modules:'今日待办、项目管理'},
+  {account:'yanxuan-accept-assist', name:'助理小邓', role:'助理', status:'已开通', modules:'今日待办、销售管理、项目管理'},
+  {account:'yanxuan-accept-design', name:'设计老张', role:'设计师', status:'已开通', modules:'今日待办、销售管理、项目管理、经营看板'},
+  {account:'yanxuan-accept-finance', name:'财务小刘', role:'财务', status:'已开通', modules:'今日待办、销售管理、项目管理、收支记账、经营看板、规则设置'},
+  {account:'yanxuan-accept-install', name:'安装师傅老赵', role:'安装队', status:'已开通', modules:'今日待办、项目管理'},
+  {account:'yanxuan-accept-off', name:'停用账号', role:'销售', status:'未开通', modules:'今日待办、销售管理、项目管理、收支记账、经营看板、规则设置'},
+  {account:'yanxuan-accept-pm', name:'项目经理小张', role:'项目经理', status:'已开通', modules:'今日待办、销售管理、项目管理、收支记账、经营看板'},
+  {account:'yanxuan-accept-sales', name:'销售小李', role:'销售', status:'已开通', modules:'今日待办、销售管理、项目管理、收支记账、经营看板'}
 ];
-const MODULE_OPTIONS = ['今日待办','待办动作','销售管理','项目合同','收支记账','经营看板','合作伙伴','规则设置'];
-const ROLE_MODULES = {负责人:MODULE_OPTIONS, 设计师:['今日待办','待办动作','项目合同'], 助理:['今日待办','待办动作','销售管理','项目合同'], 财务:['今日待办','销售管理','项目合同','收支记账','经营看板','规则设置'], 安装队:['今日待办','待办动作','项目合同'], 销售:['今日待办','待办动作','销售管理','项目合同','收支记账','经营看板','合作伙伴'], 项目经理:['今日待办','待办动作','销售管理','项目合同','收支记账','经营看板']};
+const MODULE_OPTIONS = ['今日待办','销售管理','项目管理','收支记账','经营看板','合作伙伴','规则设置'];
+const ROLE_MODULES = {负责人:MODULE_OPTIONS, 设计师:['今日待办','项目管理'], 助理:['今日待办','销售管理','项目管理'], 财务:['今日待办','销售管理','项目管理','收支记账','经营看板','规则设置'], 安装队:['今日待办','项目管理'], 销售:['今日待办','销售管理','项目管理','收支记账','经营看板','合作伙伴'], 项目经理:['今日待办','销售管理','项目管理','收支记账','经营看板']};
 
 function money(n){return Number(n||0).toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function ruleValue(name, fallback){const r=RULES.find(x=>x.name===name);if(!r||!r.enabled)return fallback;const n=Number(r.value);return Number.isFinite(n)?n:fallback;}
@@ -167,11 +167,16 @@ function renderToday(){
   `);
 }
 
+function projectSubnav(active){
+  const tabs=[['project','合同'],['actions','待办动作']];
+  return `<div class="submod">${tabs.map(([view,label])=>`<button type="button" class="${active===view?'active':''}" onclick="goView('${view}')">${label}</button>`).join('')}</div>`;
+}
 function renderActions(){
   const filters=['全部','收款','报价签字','验收'];
   let list=CONTRACTS.filter(p=>p.action);
   if(state.actionFilter!=='全部') list=list.filter(p=>p.action.name.includes(state.actionFilter)||p.action.group===state.actionFilter);
   pageShell(`
+    ${projectSubnav('actions')}
     <div class="block-title" style="margin-top:0">待办动作 <button class="btn btn-default btn-sm" onclick="render()">刷新</button></div>
     <p class="page-note">每个项目只显示当前这一步。完成或标不适用之后，下一步才会出现。还要上传文件时，完成按钮不可用。立项时指定设计师，设计动作只给这个人。</p>
     <div class="mini-tabs">${filters.map(k=>`<button class="filter-tab ${state.actionFilter===k?'active':''}" onclick="state.actionFilter='${k}';render()">${k}</button>`).join('')}</div>
@@ -203,6 +208,7 @@ function completeAction(id){
 function renderProjects(){
   const list=CONTRACTS.filter(p=>state.showEnded||(!p.ended&&!p.lost));
   pageShell(`
+    ${projectSubnav('project')}
     <div class="toolbar"><div class="toolbar-left">
       <button class="btn btn-primary" onclick="openCreateProject()">立项</button>
       <label class="check-row"><input type="checkbox" ${state.showEnded?'checked':''} onchange="state.showEnded=this.checked;render()" /><span class="check"></span><span class="check-text"><span>看已结束和流失</span></span></label>
@@ -222,7 +228,7 @@ function renderProjectDetail(){
       <div><div class="detail-title"><h1>${esc(p.id)}</h1><div class="detail-tags">${stageBadge(p.stage)}</div></div>
         <div class="detail-id">${esc(p.customerName)} · ${esc(p.customerId)}</div></div>
       <div class="detail-actions">
-        <button class="btn btn-default" onclick="goView('project')">返回合同</button>
+        <button class="btn btn-default" onclick="goView('project')">返回项目</button>
         <button class="btn btn-primary" onclick="goDetail('${p.customerId}')">打开客户</button>
       </div>
     </div>
