@@ -32,18 +32,18 @@ let RULES = [
   {name:'步骤停滞天数', value:'3', enabled:true}
 ];
 let ACCOUNTS = [
-  {account:'admin', name:'老板', role:'负责人', status:'已开通', modules:'今日待办、待办动作、客户跟进、项目合同、收支记账、经营看板、规则设置', locked:true},
+  {account:'admin', name:'老板', role:'负责人', status:'已开通', modules:'今日待办、待办动作、销售管理、项目合同、收支记账、经营看板、规则设置', locked:true},
   {account:'design', name:'设计小王', role:'设计师', status:'已开通', modules:'今日待办、待办动作、项目合同'},
-  {account:'yanxuan-accept-assist', name:'助理小邓', role:'助理', status:'已开通', modules:'今日待办、待办动作、客户跟进、项目合同'},
-  {account:'yanxuan-accept-design', name:'设计老张', role:'设计师', status:'已开通', modules:'今日待办、待办动作、客户跟进、项目合同、经营看板'},
-  {account:'yanxuan-accept-finance', name:'财务小刘', role:'财务', status:'已开通', modules:'今日待办、客户跟进、项目合同、收支记账、经营看板、规则设置'},
+  {account:'yanxuan-accept-assist', name:'助理小邓', role:'助理', status:'已开通', modules:'今日待办、待办动作、销售管理、项目合同'},
+  {account:'yanxuan-accept-design', name:'设计老张', role:'设计师', status:'已开通', modules:'今日待办、待办动作、销售管理、项目合同、经营看板'},
+  {account:'yanxuan-accept-finance', name:'财务小刘', role:'财务', status:'已开通', modules:'今日待办、销售管理、项目合同、收支记账、经营看板、规则设置'},
   {account:'yanxuan-accept-install', name:'安装师傅老赵', role:'安装队', status:'已开通', modules:'今日待办、待办动作、项目合同'},
-  {account:'yanxuan-accept-off', name:'停用账号', role:'销售', status:'未开通', modules:'今日待办、待办动作、客户跟进、项目合同、收支记账、经营看板、规则设置'},
-  {account:'yanxuan-accept-pm', name:'项目经理小张', role:'项目经理', status:'已开通', modules:'今日待办、待办动作、客户跟进、项目合同、收支记账、经营看板'},
-  {account:'yanxuan-accept-sales', name:'销售小李', role:'销售', status:'已开通', modules:'今日待办、待办动作、客户跟进、项目合同、收支记账、经营看板'}
+  {account:'yanxuan-accept-off', name:'停用账号', role:'销售', status:'未开通', modules:'今日待办、待办动作、销售管理、项目合同、收支记账、经营看板、规则设置'},
+  {account:'yanxuan-accept-pm', name:'项目经理小张', role:'项目经理', status:'已开通', modules:'今日待办、待办动作、销售管理、项目合同、收支记账、经营看板'},
+  {account:'yanxuan-accept-sales', name:'销售小李', role:'销售', status:'已开通', modules:'今日待办、待办动作、销售管理、项目合同、收支记账、经营看板'}
 ];
-const MODULE_OPTIONS = ['今日待办','待办动作','客户跟进','项目合同','收支记账','经营看板','合作伙伴','规则设置'];
-const ROLE_MODULES = {负责人:MODULE_OPTIONS, 设计师:['今日待办','待办动作','项目合同'], 助理:['今日待办','待办动作','客户跟进','项目合同'], 财务:['今日待办','客户跟进','项目合同','收支记账','经营看板','规则设置'], 安装队:['今日待办','待办动作','项目合同'], 销售:['今日待办','待办动作','客户跟进','项目合同','收支记账','经营看板','合作伙伴'], 项目经理:['今日待办','待办动作','客户跟进','项目合同','收支记账','经营看板']};
+const MODULE_OPTIONS = ['今日待办','待办动作','销售管理','项目合同','收支记账','经营看板','合作伙伴','规则设置'];
+const ROLE_MODULES = {负责人:MODULE_OPTIONS, 设计师:['今日待办','待办动作','项目合同'], 助理:['今日待办','待办动作','销售管理','项目合同'], 财务:['今日待办','销售管理','项目合同','收支记账','经营看板','规则设置'], 安装队:['今日待办','待办动作','项目合同'], 销售:['今日待办','待办动作','销售管理','项目合同','收支记账','经营看板','合作伙伴'], 项目经理:['今日待办','待办动作','销售管理','项目合同','收支记账','经营看板']};
 
 function money(n){return Number(n||0).toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function ruleValue(name, fallback){const r=RULES.find(x=>x.name===name);if(!r||!r.enabled)return fallback;const n=Number(r.value);return Number.isFinite(n)?n:fallback;}
@@ -148,7 +148,7 @@ function renderToday(){
   const list=state.todayFilter==='全部'?all:all.filter(t=>t.kind===state.todayFilter);
   pageShell(`
     <div class="block-title" style="margin-top:0">今日待办 ${all.length} 条 <button class="btn btn-default btn-sm" onclick="render()">刷新</button></div>
-    <p class="page-note">今天要处理的客户跟进、项目事项和待付。点「去处理」进入对应的客户、项目或收支记账。待付里的日常开支和内部提成到收支记账处理，不进项目。</p>
+    <p class="page-note">今天要处理的销售事项、项目事项和待付。点「去处理」进入对应的客户、项目或收支记账。待付里的日常开支和内部提成到收支记账处理，不进项目。</p>
     <div class="mini-tabs">${kinds.map(k=>`<button class="filter-tab ${state.todayFilter===k?'active':''}" onclick="state.todayFilter='${k}';render()">${k}</button>`).join('')}</div>
     <div class="table-wrap"><table class="data"><thead><tr><th>事项</th><th>客户或项目</th><th>现在的情况</th><th>该谁处理</th><th class="col-ops">操作</th></tr></thead><tbody>
       ${list.map(t=>`<tr><td>${esc(t.kind)}</td><td><strong>${esc(t.title)}</strong><div class="project-meta">${esc(t.sub)}</div></td><td>${esc(t.detail)}</td><td>${esc(t.owner)}</td><td><button class="btn btn-sm btn-primary" onclick="openWork('${t.view}','${t.id}')">去处理</button></td></tr>`).join('')||'<tr><td colspan="5">这个分类今天没有事项</td></tr>'}
