@@ -572,11 +572,7 @@ textarea.input{height:auto;min-height:88px;padding:10px 12px;resize:vertical;lin
       <div class="form-group" id="reasonGroup">
         <label>不可服务 <span class="req">*</span></label>
         <div class="reason-grid" id="reasonGrid">
-          <button type="button" class="reason-chip" data-v="户型过小" onclick="pickReason(this)">户型过小</button>
-          <button type="button" class="reason-chip" data-v="预算过低" onclick="pickReason(this)">预算过低</button>
-          <button type="button" class="reason-chip" data-v="纯咨询" onclick="pickReason(this)">纯咨询</button>
-          <button type="button" class="reason-chip" data-v="旧房改造" onclick="pickReason(this)">旧房改造</button>
-          <button type="button" class="reason-chip" data-v="超出服务半径" onclick="pickReason(this)">超出服务半径</button>
+          <button type="button" class="reason-chip" data-v="超出半径" onclick="pickReason(this)">超出半径</button>
           <button type="button" class="reason-chip" data-v="其他" onclick="pickReason(this)">其他</button>
         </div>
         <div class="form-error" id="reasonErr">请选择不可服务原因</div>
@@ -593,9 +589,6 @@ textarea.input{height:auto;min-height:88px;padding:10px 12px;resize:vertical;lin
         </div>
         <div class="dealer-list" id="dealerList"></div>
         <div class="form-error" id="dealerErr">请至少选择一位经销商</div>
-      </div>
-      <div class="form-group">
-        <label class="check-row"><input type="checkbox" id="highBudget" /><span class="check"></span><span class="check-text"><span>预算较高</span><span class="hint">客户预算高于目前可服务的范围</span></span></label>
       </div>
     </div>
     <div class="modal-footer"><button class="btn btn-default" onclick="closeModal('assignModal')">取消</button><button class="btn btn-primary" onclick="confirmAssign()">确定</button></div>
@@ -629,11 +622,11 @@ textarea.input{height:auto;min-height:88px;padding:10px 12px;resize:vertical;lin
     <li>筛选改为标签页（全部/待跟进/已成交/流失）+ 搜索 + 分级/来源</li>
     <li>「意向」改为「分级」：列表、建档、详情顶部都显示；详情里可以直接改</li>
     <li>详情增加关联项目，一个客户可挂多个项目</li>
-    <li>补上原页面能力：阶段筛选、暂缓与回访日、流失原因、预报价「不做」、分发原因与预算较高</li>
+    <li>补上原页面能力：阶段筛选、暂缓与回访日、流失原因、预报价「不做」、分发原因</li>
     <li>操作列：记跟进 / 查看；空值「—」；空状态</li>
     <li>补上工作台、今日待办、待办动作、项目合同、收支记账、经营看板、规则设置，并和客户、分级、关联项目连在一起</li>
     <li>详情：上半信息加「服务类型」（自营/分发）；「记下跟进」主按钮；步骤条；时间线；预报价禁用原因留在接待进度</li>
-    <li>分发：不可服务原因（超出服务半径/其他），分给经销商；确定后服务类型变分发并记入时间线</li>
+    <li>分发：不可服务只保留超出半径和其他，分给经销商；确定后服务类型变分发并记入时间线</li>
     <li>邀约、到店先弹出确认：到店时间必填；到店还可以填接待方式和接待人</li>
     <li>记跟进可写方式/内容/下次时间，真追加</li>
     <li>建档打开不报错；失焦/提交才校验；重复提示</li>
@@ -1182,7 +1175,6 @@ function openAssign(){
   document.querySelectorAll('#reasonGrid .reason-chip').forEach(b=>b.classList.remove('active'));
   document.getElementById('reasonOtherWrap').style.display='none';
   document.getElementById('reasonOther').value='';
-  const budget=document.getElementById('highBudget');if(budget)budget.checked=false;
   document.getElementById('dealerInput').value='';
   document.getElementById('reasonGroup').classList.remove('has-error');
   document.getElementById('dealerGroup').classList.remove('has-error');
@@ -1279,13 +1271,13 @@ function confirmAssign(){
   c.serviceType='分发';
   c.dealers=assignState.dealers.slice();
   c.distributeReason=reasonText;
-  c.highBudget=document.getElementById('highBudget').checked;
+  c.highBudget=false;
   if(c.boardStage!=='已成交' && c.boardStage!=='流失') c.boardStage='已分发';
   const now='2026-11-05 '+new Date().toTimeString().slice(0,5);
   const dealerStr=c.dealers.join('、');
   c.follows.unshift({
     method:'其他',
-    content:`已分发：原因「${reasonText}」· 经销商 ${dealerStr}${c.highBudget?' · 预算较高':''}`,
+    content:`已分发：原因「${reasonText}」· 经销商 ${dealerStr}`,
     time:now, author:'老板', next:null
   });
   c.lastFollow=now;
