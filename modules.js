@@ -1,10 +1,16 @@
 let CONTRACTS = [
   {id:'HT-202611-002', customerId:'KH-2026-002', customerName:'林晓', phone:'13800001002', designer:'设计老张', address:'重庆渝北', stage:'设计中', amount:0, due:-1000, days:45, ended:false, lost:false,
-    progress:'节点判断 5/5 · 平面 0/2 · 深化 0/4 · 复测下单 0/9 · 生产安装 0/5 · 验收 0/2',
-    action:{name:'输出平面图', group:'平面', status:'未开始', needFile:true, uploaded:false, blocker:'还要上传平面图。齐了才能点完成。'}},
-  {id:'HT-202611-001', customerId:'KH-2026-005', customerName:'吴婷', phone:'13800001005', designer:'设计小王', address:'重庆', stage:'售后', amount:100000, due:0, days:45, ended:false, lost:false,
-    progress:'节点判断 5/5 · 平面 2/2 · 深化 2/2（输出立面：不需要；输出深化图：不需要） · 复测下单 9/9 · 生产安装 5/5 · 验收 1/1（售后回访：不需要）',
-    action:null, cost:20000}
+    product:'免漆', civil:'已进场', measureDate:'', needMeasure:'是', promise:'', quoteAmount:'', installDate:'', installDays:'', sitePhone:'',
+    files:[
+      {seq:1, slot:'定金合同', name:'定金合同.png', type:'image/png', url:'', at:'2026-11-05 09:27', by:'老板', remark:'', amount:1000},
+      {seq:5, slot:'初测照片', name:'初测照片.png', type:'image/png', url:'', at:'2026-11-05 09:28', by:'老板', remark:'', amount:0},
+      {seq:5, slot:'尺寸', name:'尺寸.png', type:'image/png', url:'', at:'2026-11-05 09:28', by:'老板', remark:'', amount:0}
+    ],
+    factories:[], rectifies:[],
+    changes:[{at:'2026-11-05 09:27', by:'老板', what:'记账', from:'未填', to:'项目收款 1000.00'}]},
+  {id:'HT-202611-001', customerId:'KH-2026-005', customerName:'吴婷', phone:'13800001005', designer:'设计小王', address:'重庆', stage:'售后', amount:100000, due:0, days:45, ended:false, lost:false, quoteAmount:100000,
+    product:'免漆', civil:'已进场', measureDate:'', needMeasure:'是', promise:'', installDate:'2026-10-28', installDays:'3', sitePhone:'13800001005',
+    files:[], factories:[], rectifies:[], changes:[]}
 ];
 let LEDGER = [
   {kind:'项目收款', dir:'收款', amount:1000, subject:'', cost:false, date:'2026-11-04', due:'', project:'HT-202611-001', customer:'', unpaid:false},
@@ -79,7 +85,11 @@ function todayItems(){
   });
   CONTRACTS.forEach(p=>{
     if(p.ended||p.lost) return;
-    if(p.action && p.action.status!=='已完成') items.push({group:'project', kind:'项目事项', title:`${p.id} ${p.customerName}`, sub:p.action.name, detail:p.action.blocker||'当前这一步还没完成。', owner:p.designer||'—', view:'project', id:p.id});
+    if(p.action && p.action.status!=='已完成'){
+      const cur=currentStep(p);
+      const late=cur&&cur.plan&&cur.plan<TODAY?Math.round((new Date(TODAY)-new Date(cur.plan))/86400000):0;
+      items.push({group:'project', kind:'项目事项', title:`${p.id} ${p.customerName}`, sub:p.action.name, detail:(late?`超了 ${late} 天。`:'')+(p.action.blocker||'当前这一步还没完成。'), owner:p.designer||'—', view:'project', id:p.id});
+    }
   });
   LEDGER.filter(x=>x.unpaid&&x.project).forEach(x=>items.push({group:'project', kind:'待付', title:x.project, sub:`${x.kind} · ${money(x.amount)}`, detail:'这一单还有款没付出。', owner:'财务', view:'finance', id:''}));
   return items;
@@ -105,7 +115,7 @@ function renderDashboard(){
   pageShell(`
     <p class="page-note">在办一行一个阶段。没有项目的客户占一行，每个项目占一行。</p>
     <div class="toolbar"><div class="toolbar-left"><button class="btn btn-default" onclick="render()">刷新</button></div></div>
-    <div class="table-wrap"><table class="data"><thead><tr><th>类型</th><th>客户或合同</th><th>阶段</th><th>说明</th><th class="col-ops">操作</th></tr></thead><tbody>
+    <div class="table-wrap"><table class="data"><thead><tr><th>类型</th><th>客户或项目</th><th>阶段</th><th>说明</th><th class="col-ops">操作</th></tr></thead><tbody>
       ${rows.map(r=>`<tr><td>${esc(r.type)}</td><td><strong>${esc(r.title)}</strong></td><td>${stageBadge(r.stage)}</td><td>${esc(r.desc)}</td><td><button class="btn btn-sm btn-default" onclick="openWork('${r.view}','${r.id}')">打开</button></td></tr>`).join('')||'<tr><td colspan="5">还没有在办的客户或项目</td></tr>'}
     </tbody></table></div>
     <div class="block-title">今日 <button class="btn btn-text btn-sm" onclick="goView('today')">全部今日</button></div>
@@ -167,44 +177,154 @@ function renderToday(){
   `);
 }
 
+const STEP_DEFS = [
+  {seq:1, group:'节点判断', name:'收取定金', role:'负责人或销售', slots:['定金合同'], na:false, money:true},
+  {seq:2, group:'节点判断', name:'生成项目', role:'系统', slots:[], na:false, auto:true},
+  {seq:3, group:'节点判断', name:'判断是否量尺', role:'设计师', slots:[], na:false},
+  {seq:4, group:'节点判断', name:'建立项目群', role:'助理', slots:[], na:false},
+  {seq:5, group:'节点判断', name:'现场初测', role:'设计师', slots:['初测照片','尺寸'], na:false},
+  {seq:6, group:'平面', name:'输出平面图', role:'设计师', slots:['平面图'], na:true},
+  {seq:7, group:'平面', name:'客户确认平面', role:'设计师', slots:[], na:false, finish:'confirm'},
+  {seq:8, group:'深化', name:'输出立面', role:'设计师', slots:[], na:true},
+  {seq:9, group:'深化', name:'客户确认立面', role:'设计师', slots:[], na:false, finish:'confirm'},
+  {seq:10, group:'深化', name:'输出深化图', role:'设计师', slots:[], na:true},
+  {seq:11, group:'深化', name:'客户确认内部结构', role:'设计师', slots:[], na:false},
+  {seq:12, group:'复测下单', name:'预埋', role:'设计师', slots:[], na:true, planLabel:'到场日'},
+  {seq:13, group:'复测下单', name:'技术对接', role:'项目经理', slots:[], na:true},
+  {seq:14, group:'复测下单', name:'确认腻子完工', role:'项目经理', slots:[], na:false},
+  {seq:15, group:'复测下单', name:'现场复测', role:'设计师', slots:[], na:false},
+  {seq:16, group:'复测下单', name:'报价调整', role:'设计师或负责人', slots:[], na:false},
+  {seq:17, group:'复测下单', name:'最终稿和最终报价单', role:'设计师', slots:[], na:false, finish:'quote'},
+  {seq:18, group:'复测下单', name:'客户签字', role:'负责人', slots:[], na:false},
+  {seq:19, group:'复测下单', name:'收全款', role:'负责人或销售', slots:[], na:false},
+  {seq:20, group:'复测下单', name:'拆单下发', role:'设计师', slots:[], na:false},
+  {seq:21, group:'生产安装', name:'工厂生产', role:'项目经理', slots:[], na:true},
+  {seq:22, group:'生产安装', name:'到货入库', role:'项目经理', slots:['回传单'], na:true},
+  {seq:23, group:'生产安装', name:'齐套清点', role:'项目经理', slots:[], na:false},
+  {seq:24, group:'生产安装', name:'安排安装', role:'项目经理', slots:[], na:true, finish:'install'},
+  {seq:25, group:'生产安装', name:'安装完成', role:'安装队或项目经理', slots:[], na:true},
+  {seq:26, group:'验收', name:'客户验收', role:'负责人', slots:[], na:false},
+  {seq:27, group:'验收', name:'售后回访', role:'销售或助理', slots:[], na:true}
+];
+const FINISH_HINT = {
+  7:'完成时要填确认方式和确认日期。微信还要截图或链接。',
+  9:'完成时要填确认方式和确认日期。微信还要截图或链接。',
+  17:'完成时要填报价金额。客户签字时，合同金额按这份报价写入。',
+  18:'完成后，合同金额按最终报价写入。',
+  24:'完成时要填安装日期、预计天数和现场电话。'
+};
+let stepTick = 0;
+var previewJob = null;
+function stepNow(){stepTick+=1;return TODAY+' 18:'+String(stepTick).padStart(2,'0');}
+function stepDef(seq){return STEP_DEFS.find(d=>d.seq===seq);}
+function currentStep(p){return (p.steps||[]).find(s=>s.status!=='已完成'&&s.status!=='不适用')||null;}
+function missingSlots(p, step){
+  const slots=(stepDef(step.seq).slots)||[];
+  return slots.filter(slot=>!(p.files||[]).some(f=>f.seq===step.seq&&f.slot===slot));
+}
+function blockerOf(p, step){
+  const miss=missingSlots(p, step);
+  if(miss.length) return '还要上传'+miss.join('、')+'。齐了才能点完成。';
+  if((stepDef(step.seq).slots||[]).length) return '文件已经齐了，可以点完成。';
+  return '可以处理这一步。';
+}
+function projectGroups(){
+  const groups=[];
+  STEP_DEFS.forEach(d=>{if(!groups.includes(d.group)) groups.push(d.group);});
+  return groups;
+}
+function groupStats(p){
+  return projectGroups().map(g=>{
+    const steps=p.steps.filter(s=>stepDef(s.seq).group===g);
+    const na=steps.filter(s=>s.status==='不适用');
+    const applicable=steps.filter(s=>s.status!=='不适用');
+    const done=applicable.filter(s=>s.status==='已完成').length;
+    return {name:g, done, total:applicable.length, na};
+  });
+}
+function progressText(p){
+  return groupStats(p).map(g=>{
+    let text=g.name+' '+g.done+'/'+g.total;
+    if(g.na.length) text+='（'+g.na.map(s=>stepDef(s.seq).name+'：不需要').join('；')+'）';
+    return text;
+  }).join(' · ');
+}
+function syncProject(p){
+  if(!p.steps) return;
+  let guard=0;
+  while(guard++<5){
+    const cur=currentStep(p);
+    if(!cur||cur.seq!==2) break;
+    cur.status='已完成';cur.by='系统';cur.at=cur.at||(TODAY+' 09:27');cur.note=cur.note||'系统已生成项目';
+  }
+  p.progress=progressText(p);
+  if(p.lost){p.stage='流失';p.action=null;return;}
+  const cur=currentStep(p);
+  if(!cur){p.action=null;p.stage='售后';return;}
+  const def=stepDef(cur.seq);
+  const miss=missingSlots(p, cur);
+  p.action={name:def.name, group:def.group, status:cur.status||'未开始', needFile:def.slots.length>0, uploaded:miss.length===0, blocker:blockerOf(p, cur)};
+  if(def.group==='生产安装') p.stage='生产安装';
+  else if(def.group==='验收') p.stage='待验收';
+  else p.stage='设计中';
+}
+function seedSteps(doneUntil, extras){
+  extras=extras||{};
+  return STEP_DEFS.map(d=>{
+    const extra=extras[d.seq]||{};
+    const status=extra.status||(d.seq<=doneUntil?'已完成':'未开始');
+    const closed=status==='已完成'||status==='不适用';
+    return {seq:d.seq, status, plan:extra.plan||'', reason:extra.reason||'', by:closed?(extra.by||'老板'):'', at:closed?(extra.at||'2026-10-15 11:00'):'', note:extra.note||''};
+  });
+}
+function pushChange(p, what, from, to){
+  p.changes=p.changes||[];
+  p.changes.unshift({at:stepNow(), by:'老板', what, from:from||'未填', to:to||'未填'});
+}
+function findProject(id){return CONTRACTS.find(x=>x.id===id);}
+function markDone(p, step, by, note){
+  step.status='已完成';
+  step.by=by||'老板';
+  step.at=stepNow();
+  step.note=note||'';
+  if(step.seq===18){
+    const q=Number(p.quoteAmount)||0;
+    p.amount=q;
+    const got=LEDGER.filter(x=>x.project===p.id&&x.dir==='收款').reduce((s,x)=>s+Number(x.amount),0);
+    p.due=Math.round((q-got)*100)/100;
+  }
+  syncProject(p);
+}
+function showBlank(v){return v?esc(v):'未填';}
+function contractText(p){
+  const signed=(p.steps||[]).some(s=>s.seq===18&&s.status==='已完成');
+  return signed?money(p.amount):'未签字';
+}
 function projectSubnav(active){
-  const tabs=[['project','合同'],['actions','待办动作']];
+  const tabs=[['project','项目'],['actions','待办动作']];
   return `<div class="submod">${tabs.map(([view,label])=>`<button type="button" class="${active===view?'active':''}" onclick="goView('${view}')">${label}</button>`).join('')}</div>`;
 }
 function renderActions(){
-  const filters=['全部','收款','报价签字','验收'];
+  const filters=['全部','节点判断','平面','深化','复测下单','生产安装','验收'];
+  if(!filters.includes(state.actionFilter)) state.actionFilter='全部';
   let list=CONTRACTS.filter(p=>p.action);
-  if(state.actionFilter!=='全部') list=list.filter(p=>p.action.name.includes(state.actionFilter)||p.action.group===state.actionFilter);
+  if(state.actionFilter!=='全部') list=list.filter(p=>p.action.group===state.actionFilter);
+  const empty=state.actionFilter==='全部'?'当前没有待办动作':'这个筛选下没有待办动作';
   pageShell(`
     ${projectSubnav('actions')}
     <div class="block-title" style="margin-top:0">待办动作 <button class="btn btn-default btn-sm" onclick="render()">刷新</button></div>
-    <p class="page-note">每个项目只显示当前这一步。完成或标不适用之后，下一步才会出现。还要上传文件时，完成按钮不可用。立项时指定设计师，设计动作只给这个人。</p>
+    <p class="page-note">每个项目只显示当前这一步。完成或标不适用之后，下一步才会出现。还要上传文件时，完成按钮不可用。设计类步骤记在立项时指定的设计师名下。</p>
     <div class="mini-tabs">${filters.map(k=>`<button class="filter-tab ${state.actionFilter===k?'active':''}" onclick="state.actionFilter='${k}';render()">${k}</button>`).join('')}</div>
-    <div class="table-wrap"><table class="data"><thead><tr><th>合同</th><th>动作</th><th>设计师</th><th>状态</th><th>卡点</th><th class="col-ops">操作</th></tr></thead><tbody>
+    <div class="table-wrap"><table class="data"><thead><tr><th>项目</th><th>动作</th><th>设计师</th><th>状态</th><th>卡点</th><th class="col-ops">操作</th></tr></thead><tbody>
       ${list.map(p=>`<tr><td>${esc(p.id)}</td><td>${esc(p.action.name)}</td><td>${esc(p.designer)}</td><td>${esc(p.action.status)}</td><td>${esc(p.action.blocker||'—')}</td><td><div class="ops">
         <button class="btn btn-sm btn-default" onclick="goProject('${p.id}')">打开项目</button>
-        ${p.action.needFile?`<button class="btn btn-sm btn-default" onclick="uploadActionFile('${p.id}')">上传</button>`:''}
-        <button class="btn btn-sm btn-primary" ${p.action.needFile&&!p.action.uploaded?'disabled':''} onclick="completeAction('${p.id}')">完成</button>
-      </div></td></tr>`).join('')||'<tr><td colspan="6">这个筛选下没有待办动作</td></tr>'}
+        ${p.action.needFile?`<button class="btn btn-sm btn-default" onclick="openUpload('${p.id}')">上传</button>`:''}
+        <button class="btn btn-sm btn-primary" ${p.action.needFile&&!p.action.uploaded?'disabled':''} onclick="openFinish('${p.id}')">完成</button>
+      </div></td></tr>`).join('')||'<tr><td colspan="6">'+empty+'</td></tr>'}
     </tbody></table></div>
     <div class="pager"><span class="info">共 ${list.length} 条</span></div>
   `);
 }
-function uploadActionFile(id){
-  const p=CONTRACTS.find(x=>x.id===id);if(!p||!p.action)return;
-  p.action.uploaded=true;p.action.blocker='文件已齐，可以点完成。';toast('已上传');render();
-}
-function completeAction(id){
-  const p=CONTRACTS.find(x=>x.id===id);if(!p||!p.action)return;
-  if(p.action.needFile&&!p.action.uploaded){toast(p.action.blocker);return;}
-  const next={输出平面图:'输出立面图',输出立面图:'报价签字',报价签字:'收款',收款:'验收',验收:''};
-  const name=next[p.action.name];
-  if(!name){p.action=null;p.stage=p.stage==='设计中'?'生产安装':p.stage;toast('这一步已完成');render();return;}
-  const need=name.startsWith('输出');
-  p.action={name, group:name, status:'未开始', needFile:need, uploaded:false, blocker:need?'还要上传'+name.replace('输出','')+'。齐了才能点完成。':''};
-  toast('已完成，进入下一步');render();
-}
-
 function renderProjects(){
   const list=CONTRACTS.filter(p=>state.showEnded||(!p.ended&&!p.lost));
   pageShell(`
@@ -213,48 +333,494 @@ function renderProjects(){
       <button class="btn btn-primary" onclick="openCreateProject()">立项</button>
       <label class="check-row"><input type="checkbox" ${state.showEnded?'checked':''} onchange="state.showEnded=this.checked;render()" /><span class="check"></span><span class="check-text"><span>看已结束和流失</span></span></label>
     </div></div>
-    <div class="table-wrap"><table class="data"><thead><tr><th>合同</th><th>客户</th><th>设计师</th><th>客户编号</th><th>电话</th><th>地址</th><th>阶段</th><th>分组进度</th><th>订单总额</th><th>待收</th><th>工期</th><th class="col-ops">操作</th></tr></thead><tbody>
-      ${list.map(p=>`<tr onclick="goProject('${p.id}')"><td>${esc(p.id)}</td><td>${esc(p.customerName)}</td><td>${esc(p.designer)}</td><td>${esc(p.customerId)}</td><td class="phone">${fmtPhone(p.phone)}</td><td>${esc(p.address)}</td><td>${stageBadge(p.stage)}</td><td title="${esc(p.progress)}"><span class="ellipsis" style="max-width:220px">${esc(p.progress)}</span></td><td>${money(p.amount)}</td><td>${money(p.due)}</td><td>${p.days} 个工作日</td><td onclick="event.stopPropagation()"><button class="btn btn-sm btn-default" onclick="goProject('${p.id}')">打开</button></td></tr>`).join('')||'<tr><td colspan="12">没有合同</td></tr>'}
+    <div class="table-wrap"><table class="data"><thead><tr><th>项目</th><th>客户</th><th>设计师</th><th>客户编号</th><th>电话</th><th>地址</th><th>阶段</th><th>分组进度</th><th>订单总额</th><th>待收</th><th>工期</th><th class="col-ops">操作</th></tr></thead><tbody>
+      ${list.map(p=>`<tr onclick="goProject('${p.id}')"><td>${esc(p.id)}</td><td>${esc(p.customerName)}</td><td>${esc(p.designer)}</td><td>${esc(p.customerId)}</td><td class="phone">${fmtPhone(p.phone)}</td><td>${esc(p.address)}</td><td>${stageBadge(p.stage)}</td><td title="${esc(p.progress)}"><span class="ellipsis" style="max-width:220px">${esc(p.progress)}</span></td><td>${money(p.amount)}</td><td>${money(p.due)}</td><td>${p.days} 个工作日</td><td onclick="event.stopPropagation()"><button class="btn btn-sm btn-default" onclick="goProject('${p.id}')">打开</button></td></tr>`).join('')||'<tr><td colspan="12">没有项目</td></tr>'}
     </tbody></table></div>
     <div class="pager"><span class="info">共 ${list.length} 条</span></div>
   `);
 }
+function explainStep(p, step, cur){
+  const def=stepDef(step.seq);
+  if(step.status==='已完成') return ['已完成', step.by, step.at, step.note].filter(Boolean).join(' · ');
+  if(step.status==='不适用') return '不适用'+(step.reason?'：'+step.reason:'');
+  const bits=[];
+  if(cur&&step.seq===cur.seq) bits.push(blockerOf(p, step));
+  else if(cur) bits.push('请先处理「'+stepDef(cur.seq).name+'」。这一步还不能上传，也不能点完成。');
+  if(def.slots.length) bits.push('要上传'+def.slots.join('、'));
+  if(def.money) bits.push('定金金额可以一起记，填 0 就只保存文件');
+  if(FINISH_HINT[step.seq]) bits.push(FINISH_HINT[step.seq]);
+  if(def.na) bits.push('可以标不适用，要填原因');
+  if(def.auto) bits.push('这一步由系统自动完成');
+  if(step.plan&&step.plan<TODAY) bits.push('超了 '+Math.round((new Date(TODAY)-new Date(step.plan))/86400000)+' 天');
+  return bits.join(' ');
+}
+function stepOps(p, step){
+  if(p.lost) return '—';
+  const cur=currentStep(p);
+  if(!cur||cur.seq!==step.seq) return '—';
+  const def=stepDef(step.seq);
+  if(def.auto) return '系统自动完成';
+  const miss=missingSlots(p, step);
+  const label=def.planLabel||'计划日';
+  return `<div class="step-ops">
+    ${def.slots.length?`<button type="button" class="btn btn-sm btn-default" onclick="openUpload('${p.id}')">上传</button>`:''}
+    <button type="button" class="btn btn-sm btn-primary" ${miss.length?'disabled':''} onclick="openFinish('${p.id}')">完成</button>
+    ${def.na?`<button type="button" class="btn btn-sm btn-default" onclick="openNa('${p.id}')">不适用</button>`:''}
+    <button type="button" class="btn btn-sm btn-default" onclick="openPlan('${p.id}')">修改${label}</button>
+  </div>`;
+}
 function renderProjectDetail(){
-  const p=CONTRACTS.find(x=>x.id===state.projectId);
+  const p=findProject(state.projectId);
   if(!p){goView('project');return;}
+  if(!p.steps){goView('project');return;}
+  if(state.stepFor!==p.id){state.stepFor=p.id;state.stepGroup='全部';}
   const cost=projectCost(p.id);
+  const profit=Math.round((Number(p.amount)-cost)*100)/100;
+  const rate=Number(p.amount)?(profit/Number(p.amount)*100):0;
+  const cur=currentStep(p);
+  const stats=groupStats(p);
+  const rows=p.steps.filter(s=>state.stepGroup==='全部'||stepDef(s.seq).group===state.stepGroup);
+  const files=p.files||[];
   pageShell(`
     <div class="detail-header">
       <div><div class="detail-title"><h1>${esc(p.id)}</h1><div class="detail-tags">${stageBadge(p.stage)}</div></div>
-        <div class="detail-id">${esc(p.customerName)} · ${esc(p.customerId)}</div></div>
+        <div class="detail-id">${esc(p.customerName)} · ${esc(p.customerId)} · ${cur?esc(stepDef(cur.seq).name):'步骤已走完'}</div></div>
       <div class="detail-actions">
         <button class="btn btn-default" onclick="goView('project')">返回项目</button>
         <button class="btn btn-primary" onclick="goDetail('${p.customerId}')">打开客户</button>
       </div>
     </div>
+    ${p.lost?`<div class="banner-lost">这个项目已流失。步骤、文件和金额只供查看。收款和增项仍在收支记账里记。${p.lostReason?'原因：'+esc(p.lostReason):''}</div>`:`<div class="toolbar"><div class="toolbar-left">
+      <button class="btn btn-default" onclick="openSite('${p.id}')">修改现场</button>
+      <button class="btn btn-default" onclick="openReconfirm('${p.id}')">重新确认</button>
+      <button class="btn btn-default" onclick="openLost('${p.id}')">标流失</button>
+      <button class="btn btn-default" onclick="openFactory('${p.id}')">添加工厂</button>
+      <button class="btn btn-default" onclick="openRectify('${p.id}')">打开整改</button>
+    </div></div>`}
     <div class="info-grid info-grid-5">
-      <div class="info-item"><label>设计师</label><div class="val">${esc(p.designer||'—')}</div></div>
+      <div class="info-item"><label>客户</label><div class="val">${esc(p.customerName)}</div></div>
+      <div class="info-item"><label>客户编号</label><div class="val">${esc(p.customerId)}</div></div>
       <div class="info-item"><label>电话</label><div class="val">${fmtPhone(p.phone)}</div></div>
       <div class="info-item"><label>地址</label><div class="val">${esc(p.address)}</div></div>
+      <div class="info-item"><label>设计师</label><div class="val">${esc(p.designer||'—')}</div></div>
       <div class="info-item"><label>订单总额</label><div class="val">${money(p.amount)}</div></div>
       <div class="info-item"><label>待收</label><div class="val">${money(p.due)}</div></div>
+      <div class="info-item"><label>合同金额</label><div class="val">${contractText(p)}</div></div>
       <div class="info-item"><label>工期</label><div class="val">${p.days} 个工作日</div></div>
+      <div class="info-item"><label>承诺日</label><div class="val">${showBlank(p.promise)}</div></div>
+      <div class="info-item"><label>产品</label><div class="val">${showBlank(p.product)}</div></div>
+      <div class="info-item"><label>土建</label><div class="val">${showBlank(p.civil)}</div></div>
+      <div class="info-item"><label>可量尺日</label><div class="val">${showBlank(p.measureDate)}</div></div>
+      <div class="info-item"><label>需要量尺</label><div class="val">${showBlank(p.needMeasure)}</div></div>
+      <div class="info-item"><label>报价金额</label><div class="val">${p.quoteAmount?money(p.quoteAmount):'未填'}</div></div>
+      <div class="info-item"><label>安装日期</label><div class="val">${showBlank(p.installDate)}</div></div>
+      <div class="info-item"><label>预计天数</label><div class="val">${p.installDays?esc(p.installDays):'未填'}</div></div>
+      <div class="info-item"><label>现场电话</label><div class="val">${p.sitePhone?fmtPhone(p.sitePhone):'未填'}</div></div>
       <div class="info-item"><label>成本</label><div class="val">${money(cost)}</div></div>
+      <div class="info-item"><label>毛利</label><div class="val">${money(profit)}</div></div>
+      <div class="info-item"><label>毛利率</label><div class="val">${rate.toFixed(2)}%</div></div>
+      <div class="info-item"><label>抽成</label><div class="val">${money(0)}</div></div>
     </div>
-    <div class="section"><div class="section-title">分组进度</div><div class="empty-inline" style="text-align:left">${esc(p.progress)}</div></div>
-    <div class="section"><div class="section-title">当前动作</div>
-      ${p.action?`<div class="drawing-box"><div><strong>${esc(p.action.name)}</strong><p>${esc(p.action.blocker||'可以处理这一步')}</p></div><div class="ops">
-        ${p.action.needFile?`<button class="btn btn-default" onclick="uploadActionFile('${p.id}')">上传</button>`:''}
-        <button class="btn btn-primary" ${p.action.needFile&&!p.action.uploaded?'disabled':''} onclick="completeAction('${p.id}')">完成</button>
-      </div></div>`:'<div class="empty-inline">当前没有待办动作</div>'}
+    <div class="group-chips">
+      <button type="button" class="group-chip ${state.stepGroup==='全部'?'on':''}" onclick="state.stepGroup='全部';render()">全部 <b>${p.steps.filter(s=>s.status==='已完成').length}/${p.steps.length}</b></button>
+      ${stats.map(g=>`<button type="button" class="group-chip ${state.stepGroup===g.name?'on':''}" onclick="state.stepGroup='${g.name}';render()">${g.name} <b>${g.done}/${g.total}</b></button>`).join('')}
+    </div>
+    <p class="page-note">${esc(p.progress)}</p>
+    <p class="page-note">步骤按顺序往下走。只有当前这一步能上传、完成或标不适用。没有上传按钮就不用文件。有上传按钮时，缺的文件传齐才能点完成。计划日可以改，预埋改的是到场日。日期过了还没做完，会写超了几天，并出现在今日待办。客户确认平面、客户确认立面要填确认方式；最终报价要填金额；安排安装要填日期、天数和现场电话。</p>
+    <div class="table-wrap"><table class="data"><thead><tr><th>步骤</th><th>分组</th><th>岗位</th><th>状态</th><th>计划</th><th>说明</th><th class="col-ops">操作</th></tr></thead><tbody>
+      ${rows.map(s=>{
+        const def=stepDef(s.seq);
+        const cls=cur&&s.seq===cur.seq?'step-now':(s.status==='未开始'?'step-locked':'');
+        const plan=s.plan?(s.plan+(s.status==='未开始'&&s.plan<TODAY?' · 超了 '+Math.round((new Date(TODAY)-new Date(s.plan))/86400000)+' 天':'')):'—';
+        const status=s.status==='未开始'&&cur&&s.seq===cur.seq?'进行中':s.status;
+        return `<tr class="${cls}"><td>${s.seq}. ${esc(def.name)}</td><td>${esc(def.group)}</td><td>${esc(def.role)}</td><td>${esc(status)}</td><td>${esc(plan)}</td><td>${esc(explainStep(p,s,cur))}</td><td>${stepOps(p,s)}</td></tr>`;
+      }).join('')}
+    </tbody></table></div>
+    <div class="section"><div class="section-title">报价和资料</div>
+      ${files.length?`<div class="table-wrap"><table class="data"><thead><tr><th>步骤</th><th>文件</th><th>名称</th><th>金额</th><th>时间</th><th class="col-ops">操作</th></tr></thead><tbody>
+        ${files.map((f,i)=>{
+          const st=p.steps.find(s=>s.seq===f.seq);
+          const closed=st&&(st.status==='已完成'||st.status==='不适用');
+          return `<tr><td>${esc(stepDef(f.seq).name)}</td><td>${esc(f.slot)}</td><td>${esc(f.name)}</td><td>${f.amount?money(f.amount):'—'}</td><td>${esc(f.at||'—')}</td><td><div class="ops">
+            <button type="button" class="btn btn-sm btn-default" onclick="previewProjectFile('${p.id}',${i})">预览</button>
+            ${closed?'':`<button type="button" class="btn btn-sm btn-default" onclick="deleteProjectFile('${p.id}',${i})">删除</button>`}
+          </div></td></tr>`;
+        }).join('')}
+      </tbody></table></div>`:'<div class="empty-inline">还没有上传的文件。没有规定文件的步骤不会出现在这里。</div>'}
+    </div>
+    <div class="section"><div class="section-title">工厂</div>
+      ${(p.factories||[]).length?`<div class="table-wrap"><table class="data"><thead><tr><th>名称</th><th>内容</th><th>金额</th><th>时间</th></tr></thead><tbody>
+        ${p.factories.map(f=>`<tr><td>${esc(f.name)}</td><td>${esc(f.content)}</td><td>${money(f.amount)}</td><td>${esc(f.at)}</td></tr>`).join('')}
+      </tbody></table></div>`:'<div class="empty-inline">还没有工厂。金额用来对账和提醒打款，不计入项目成本。</div>'}
+    </div>
+    <div class="section"><div class="section-title">整改</div>
+      ${(p.rectifies||[]).length?`<div class="table-wrap"><table class="data"><thead><tr><th>事项</th><th>说明</th><th>状态</th><th>时间</th></tr></thead><tbody>
+        ${p.rectifies.map(r=>`<tr><td>${esc(r.title)}</td><td>${esc(r.note||'—')}</td><td>${esc(r.status)}</td><td>${esc(r.at)}</td></tr>`).join('')}
+      </tbody></table></div>`:'<div class="empty-inline">还没有整改。</div>'}
+    </div>
+    <div class="section"><div class="section-title">变更记录</div>
+      ${(p.changes||[]).length?`<div class="table-wrap"><table class="data"><thead><tr><th>时间</th><th>谁</th><th>事项</th><th>从</th><th>到</th></tr></thead><tbody>
+        ${p.changes.map(c=>`<tr><td>${esc(c.at)}</td><td>${esc(c.by)}</td><td>${esc(c.what)}</td><td>${esc(c.from)}</td><td>${esc(c.to)}</td></tr>`).join('')}
+      </tbody></table></div>`:'<div class="empty-inline">还没有变更。</div>'}
     </div>
   `);
 }
 function projectCost(id){return LEDGER.filter(x=>x.project===id&&x.dir==='付款'&&x.cost).reduce((s,x)=>s+x.amount,0);}
+function openUpload(id){
+  const p=findProject(id);
+  const step=p&&currentStep(p);
+  if(!p||!step||p.lost) return;
+  const def=stepDef(step.seq);
+  if(!def.slots.length) return;
+  const missing=missingSlots(p, step);
+  const picked=missing[0]||def.slots[0];
+  const preset=picked==='定金合同'&&p.depositHint?p.depositHint:'';
+  openModule('上传「'+def.name+'」', `
+    <p class="page-note">${missing.length?esc('还要上传'+missing.join('、')+'。'):'文件已经齐了，可以再换一份。'}完成之前可以多次上传，也可以先关掉，以后再传。下拉框停在还没有的那一份。</p>
+    <div class="form-group"><label>文件</label>
+      <select class="input select" id="stepSlot" style="width:100%" onchange="onStepSlot()">${def.slots.map(s=>`<option ${s===picked?'selected':''}>${esc(s)}${missing.includes(s)?'（还没有）':''}</option>`).join('')}</select>
+    </div>
+    <div class="form-group" id="stepAmountBox" style="display:${picked==='定金合同'?'block':'none'}"><label>金额</label>
+      <input class="input" id="stepAmount" placeholder="0.00" inputmode="decimal" value="${preset}" />
+      <p class="page-note" style="margin:8px 0 0">这次收到的金额，会计入已收。填 0 就只保存文件。</p>
+    </div>
+    <div class="form-group"><label>选择文件</label>
+      <input id="stepFile" type="file" onchange="onStepFile()" />
+      <div class="form-error" id="stepFileErr" style="display:block">请选择文件</div>
+    </div>
+    <div class="form-group"><label>备注 <span id="stepCount">0</span>/255</label>
+      <textarea class="input" id="stepRemark" maxlength="255" oninput="document.getElementById('stepCount').textContent=this.value.length" placeholder="写一下这份文件是什么。可以留空。"></textarea>
+    </div>
+  `, ()=>submitStepFile(id));
+  const ok=document.getElementById('moduleOk');
+  ok.disabled=true;
+}
+function onStepSlot(){
+  const slot=document.getElementById('stepSlot').value;
+  const box=document.getElementById('stepAmountBox');
+  if(box) box.style.display=slot.indexOf('定金合同')===0?'block':'none';
+}
+function onStepFile(){
+  const input=document.getElementById('stepFile');
+  const file=input&&input.files&&input.files[0];
+  const err=document.getElementById('stepFileErr');
+  const ok=document.getElementById('moduleOk');
+  if(err) err.style.display=file?'none':'block';
+  if(ok) ok.disabled=!file;
+}
+function submitStepFile(id){
+  const p=findProject(id);
+  const step=p&&currentStep(p);
+  if(!p||!step||p.lost) return false;
+  const input=document.getElementById('stepFile');
+  const file=input&&input.files&&input.files[0];
+  if(!file){onStepFile();return false;}
+  const slot=document.getElementById('stepSlot').value.replace('（还没有）','');
+  const remark=document.getElementById('stepRemark').value.trim();
+  let amount=0;
+  if(slot==='定金合同') amount=Number(document.getElementById('stepAmount').value)||0;
+  if(amount<0){toast('金额不能小于 0');return false;}
+  p.files=p.files||[];
+  const prev=p.files.find(f=>f.seq===step.seq&&f.slot===slot);
+  if(prev&&prev.url) URL.revokeObjectURL(prev.url);
+  const rec={seq:step.seq, slot, name:file.name, type:file.type||'', url:URL.createObjectURL(file), at:stepNow(), by:'老板', remark, amount:prev&&prev.amount?prev.amount:amount};
+  if(prev) Object.assign(prev, rec);
+  else p.files.push(rec);
+  if(!prev&&amount>0){
+    LEDGER.unshift({kind:'项目收款', dir:'收款', amount, subject:'定金', cost:false, date:TODAY, due:'', project:p.id, customer:'', unpaid:false});
+    p.due=Math.round((Number(p.due)-amount)*100)/100;
+    pushChange(p,'记账','未填','项目收款 '+money(amount));
+  }
+  syncProject(p);
+  toast(missingSlots(p, currentStep(p)||step).length?'已上传':'文件已经齐了，可以点完成');
+  render();
+}
+function openFinish(id){
+  const p=findProject(id);
+  const step=p&&currentStep(p);
+  if(!p||!step||p.lost) return;
+  const def=stepDef(step.seq);
+  const miss=missingSlots(p, step);
+  if(miss.length){toast('还要上传'+miss.join('、')+'。齐了才能点完成。');return;}
+  if(def.finish==='confirm'){openConfirmFinish(p, step);return;}
+  if(def.finish==='quote'){openQuoteFinish(p, step);return;}
+  if(def.finish==='install'){openInstallFinish(p, step);return;}
+  if(step.seq===18&&!(Number(p.quoteAmount)>0)){toast('还没有最终报价');return;}
+  openModule('完成', `<p style="margin:0">完成「${esc(def.name)}」？</p>`, ()=>{
+    markDone(p, step, '老板', '');
+    pushChange(p,'完成步骤','未开始', def.name);
+    toast(currentStep(p)?'已完成，进入下一步':'这一步已完成');
+    render();
+  });
+}
+function openConfirmFinish(p, step){
+  const def=stepDef(step.seq);
+  openModule('完成「'+def.name+'」', `
+    <p class="page-note">确认留痕可以不传。微信确认时，截图和链接有一个即可。当面或电话记下方式和日期。</p>
+    <div class="form-group" id="cfMethodGroup"><label>确认方式 <span class="req">*</span></label>
+      <select class="input select" id="cfMethod" style="width:100%" onchange="onConfirmMethod()"><option value="">请选择</option><option>微信</option><option>当面</option><option>电话</option></select>
+      <div class="form-error">请选择确认方式</div></div>
+    <div class="form-group" id="cfDateGroup"><label>确认日期 <span class="req">*</span></label>
+      <input class="input" type="date" id="cfDate" /><div class="form-error">请填写确认日期</div></div>
+    <div id="cfTrace" style="display:none">
+      <div class="form-group" id="cfTraceGroup"><label>确认留痕</label>
+        <input type="file" id="cfFile" />
+        <input class="input" id="cfLink" placeholder="或者填确认链接" style="margin-top:8px" />
+        <div class="form-error">微信确认时，截图和链接有一个即可</div></div>
+    </div>
+  `, ()=>{
+    const method=document.getElementById('cfMethod').value;
+    const date=document.getElementById('cfDate').value;
+    let ok=true;
+    clearField('cfMethodGroup');clearField('cfDateGroup');clearField('cfTraceGroup');
+    if(!method){fieldError('cfMethodGroup');ok=false;}
+    if(!date){fieldError('cfDateGroup');ok=false;}
+    const fileEl=document.getElementById('cfFile');
+    const file=fileEl&&fileEl.files&&fileEl.files[0];
+    const link=document.getElementById('cfLink').value.trim();
+    if(method==='微信'&&!file&&!link){fieldError('cfTraceGroup');ok=false;}
+    if(!ok) return false;
+    if(file) p.files.push({seq:step.seq, slot:'确认留痕', name:file.name, type:file.type||'', url:URL.createObjectURL(file), at:stepNow(), by:'老板', remark:link, amount:0});
+    markDone(p, step, '老板', method+' · '+date+(link?' · '+link:''));
+    pushChange(p,'完成步骤','未开始', def.name+' '+method);
+    toast('已完成，进入下一步');
+    render();
+  });
+}
+function onConfirmMethod(){
+  const show=document.getElementById('cfMethod').value==='微信';
+  const box=document.getElementById('cfTrace');
+  if(box) box.style.display=show?'block':'none';
+}
+function openQuoteFinish(p, step){
+  openModule('完成「最终稿和最终报价单」', `
+    <p class="page-note">客户签字时，合同金额按这份报价写入。</p>
+    <div class="form-group" id="qAmountGroup"><label>报价金额 <span class="req">*</span></label>
+      <input class="input" id="qAmount" placeholder="0.00" inputmode="decimal" value="${p.quoteAmount||''}" />
+      <div class="form-error">报价金额要大于 0</div></div>
+  `, ()=>{
+    const n=Number(document.getElementById('qAmount').value);
+    clearField('qAmountGroup');
+    if(!(n>0)){fieldError('qAmountGroup');return false;}
+    p.quoteAmount=n;
+    markDone(p, step, '老板', '报价 '+money(n));
+    pushChange(p,'报价','未填', money(n));
+    toast('已记下报价，进入下一步');
+    render();
+  });
+}
+function openInstallFinish(p, step){
+  openModule('完成「安排安装」', `
+    <div class="form-group" id="inDateGroup"><label>安装日期 <span class="req">*</span></label><input class="input" type="date" id="inDate" value="${p.installDate||''}" /><div class="form-error">请填写安装日期</div></div>
+    <div class="form-group" id="inDaysGroup"><label>预计天数 <span class="req">*</span></label><input class="input" id="inDays" inputmode="numeric" value="${p.installDays||''}" /><div class="form-error">预计天数要是正整数</div></div>
+    <div class="form-group" id="inPhoneGroup"><label>现场电话 <span class="req">*</span></label><input class="input" id="inPhone" value="${esc(p.sitePhone||'')}" /><div class="form-error">请填写现场电话</div></div>
+  `, ()=>{
+    const date=document.getElementById('inDate').value;
+    const days=document.getElementById('inDays').value.trim();
+    const phone=document.getElementById('inPhone').value.trim();
+    let ok=true;
+    clearField('inDateGroup');clearField('inDaysGroup');clearField('inPhoneGroup');
+    if(!date){fieldError('inDateGroup');ok=false;}
+    if(!/^[1-9]\d*$/.test(days)){fieldError('inDaysGroup');ok=false;}
+    if(!phone){fieldError('inPhoneGroup');ok=false;}
+    if(!ok) return false;
+    p.installDate=date;p.installDays=days;p.sitePhone=phone;
+    markDone(p, step, '老板', date+' · '+days+'天 · '+phone);
+    pushChange(p,'安排安装','未填', date);
+    toast('已安排安装');
+    render();
+  });
+}
+function openNa(id){
+  const p=findProject(id);
+  const step=p&&currentStep(p);
+  const def=step&&stepDef(step.seq);
+  if(!p||!step||p.lost||!def.na) return;
+  openModule('不适用', `
+    <p class="page-note">这一步标成不适用之后，下一步才会出现。</p>
+    <div class="form-group" id="naGroup"><label>原因 <span class="req">*</span></label>
+      <textarea class="input" id="naReason" placeholder="请填写原因"></textarea>
+      <div class="form-error">请填写原因</div></div>
+  `, ()=>{
+    const reason=document.getElementById('naReason').value.trim();
+    clearField('naGroup');
+    if(!reason){fieldError('naGroup','请填写原因');return false;}
+    step.status='不适用';step.reason=reason;step.by='老板';step.at=stepNow();
+    syncProject(p);
+    pushChange(p,'不适用','未开始', def.name+'：'+reason);
+    toast('已标为不适用');
+    render();
+  });
+}
+function openPlan(id){
+  const p=findProject(id);
+  const step=p&&currentStep(p);
+  const def=step&&stepDef(step.seq);
+  if(!p||!step||p.lost||def.auto) return;
+  const label=def.planLabel||'计划日';
+  openModule('修改'+label+' '+def.name, `
+    <p class="page-note">留空就是清掉这一天。日期已过且这一步还没完成，会进今日待办。</p>
+    <div class="form-group"><label>${label}</label><input class="input" type="date" id="planDate" value="${step.plan||''}" /></div>
+  `, ()=>{
+    const v=document.getElementById('planDate').value;
+    const prev=step.plan||'未填';
+    step.plan=v;
+    pushChange(p,'修改'+label, prev, v||'未填');
+    syncProject(p);
+    toast(v?'已改'+label:'已清掉'+label);
+    render();
+  });
+}
+function openSite(id){
+  const p=findProject(id);if(!p||p.lost) return;
+  const products=['免漆','油漆','混合'];
+  if(p.product&&!products.includes(p.product)) products.unshift(p.product);
+  openModule('修改现场', `
+    <p class="page-note">改土建是否进场、可量尺日、要不要量尺、承诺日和产品。土建未进场时，预计可量尺日要填。已进场可以不填。</p>
+    <div class="form-row">
+      <div class="form-group"><label>土建</label><select class="input select" id="siteCivil" style="width:100%"><option ${p.civil==='已进场'?'selected':''}>已进场</option><option ${p.civil==='未进场'?'selected':''}>未进场</option></select></div>
+      <div class="form-group" id="siteMeasureGroup"><label>可量尺日</label><input class="input" type="date" id="siteMeasure" value="${p.measureDate||''}" /><div class="form-error">土建未进场时，预计可量尺日要填</div></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>需要量尺</label><select class="input select" id="siteNeed" style="width:100%"><option ${p.needMeasure!=='否'?'selected':''}>是</option><option ${p.needMeasure==='否'?'selected':''}>否</option></select></div>
+      <div class="form-group"><label>承诺日</label><input class="input" type="date" id="sitePromise" value="${p.promise||''}" /></div>
+    </div>
+    <div class="form-group"><label>产品</label><select class="input select" id="siteProduct" style="width:100%">${products.map(n=>`<option ${n===p.product?'selected':''}>${esc(n)}</option>`).join('')}</select></div>
+  `, ()=>{
+    const civil=document.getElementById('siteCivil').value;
+    const measure=document.getElementById('siteMeasure').value;
+    clearField('siteMeasureGroup');
+    if(civil==='未进场'&&!measure){fieldError('siteMeasureGroup');return false;}
+    const before=[p.civil,p.measureDate,p.needMeasure,p.promise,p.product].join(' / ');
+    p.civil=civil;p.measureDate=measure;p.needMeasure=document.getElementById('siteNeed').value;p.promise=document.getElementById('sitePromise').value;p.product=document.getElementById('siteProduct').value;
+    const after=[p.civil,p.measureDate||'未填',p.needMeasure,p.promise||'未填',p.product].join(' / ');
+    pushChange(p,'修改现场', before, after);
+    toast('已修改现场');render();
+  });
+}
+function openReconfirm(id){
+  const p=findProject(id);if(!p||p.lost) return;
+  const arrived=p.steps.some(s=>s.seq===22&&s.status==='已完成');
+  if(arrived){toast('货已到就不能用');return;}
+  openModule('重新确认', `
+    <p class="page-note">填写原因后，客户签字和后面已完成的动作退回未开始。货已到就不能用。</p>
+    <div class="form-group" id="rcGroup"><label>原因 <span class="req">*</span></label>
+      <textarea class="input" id="rcReason" placeholder="请填写原因"></textarea>
+      <div class="form-error">请填写原因</div></div>
+  `, ()=>{
+    const reason=document.getElementById('rcReason').value.trim();
+    clearField('rcGroup');
+    if(!reason){fieldError('rcGroup','请填写原因');return false;}
+    const signed=p.steps.some(s=>s.seq===18&&s.status==='已完成');
+    p.steps.forEach(s=>{
+      if(s.seq>=18&&(s.status==='已完成'||s.status==='不适用')){
+        s.status='未开始';s.reason='';s.by='';s.at='';s.note='';
+      }
+    });
+    if(signed){
+      p.amount=0;
+      const got=LEDGER.filter(x=>x.project===p.id&&x.dir==='收款').reduce((sum,x)=>sum+Number(x.amount),0);
+      p.due=Math.round((0-got)*100)/100;
+    }
+    syncProject(p);
+    pushChange(p,'重新确认','已完成','退回未开始：'+reason);
+    toast('已退回客户签字及后面的步骤');
+    render();
+  });
+}
+function openLost(id){
+  const p=findProject(id);if(!p||p.lost) return;
+  openModule('标流失', `
+    <p class="page-note">阶段变成流失。步骤和文件留着，但不能再改。收款和增项仍可记。</p>
+    <div class="form-group" id="lostGroup"><label>原因 <span class="req">*</span></label>
+      <textarea class="input" id="lostReason" placeholder="请填写原因"></textarea>
+      <div class="form-error">请填写原因</div></div>
+  `, ()=>{
+    const reason=document.getElementById('lostReason').value.trim();
+    clearField('lostGroup');
+    if(!reason){fieldError('lostGroup','请填写原因');return false;}
+    const before=p.stage;
+    p.lost=true;p.lostReason=reason;
+    syncProject(p);
+    pushChange(p,'标流失', before, '流失：'+reason);
+    toast('已标为流失');
+    render();
+  });
+}
+function openFactory(id){
+  const p=findProject(id);if(!p||p.lost) return;
+  openModule('添加工厂', `
+    <p class="page-note">新增一条工厂记录。金额用来对账和提醒打款，不计入项目成本。</p>
+    <div class="form-group" id="facNameGroup"><label>名称 <span class="req">*</span></label><input class="input" id="facName" /><div class="form-error">请填写名称</div></div>
+    <div class="form-group"><label>内容</label><select class="input select" id="facContent" style="width:100%"><option>柜体</option><option>门板</option><option>台面</option><option>五金</option><option>其他</option></select></div>
+    <div class="form-group" id="facAmountGroup"><label>金额 <span class="req">*</span></label><input class="input" id="facAmount" placeholder="0.00" /><div class="form-error">请填写金额</div></div>
+  `, ()=>{
+    const name=document.getElementById('facName').value.trim();
+    const amount=Number(document.getElementById('facAmount').value);
+    let ok=true;clearField('facNameGroup');clearField('facAmountGroup');
+    if(!name){fieldError('facNameGroup');ok=false;}
+    if(!(amount>0)){fieldError('facAmountGroup');ok=false;}
+    if(!ok) return false;
+    const content=document.getElementById('facContent').value;
+    p.factories=p.factories||[];
+    p.factories.push({name, content, amount, at:stepNow()});
+    pushChange(p,'添加工厂','未填', name+' '+money(amount));
+    toast('已添加工厂');render();
+  });
+}
+function openRectify(id){
+  const p=findProject(id);if(!p||p.lost) return;
+  openModule('打开整改', `
+    <p class="page-note">新增一条未关闭的整改，记在下面的整改表里。</p>
+    <div class="form-group" id="rfTitleGroup"><label>事项 <span class="req">*</span></label><input class="input" id="rfTitle" /><div class="form-error">请填写事项</div></div>
+    <div class="form-group"><label>说明</label><textarea class="input" id="rfNote"></textarea></div>
+  `, ()=>{
+    const title=document.getElementById('rfTitle').value.trim();
+    clearField('rfTitleGroup');
+    if(!title){fieldError('rfTitleGroup');return false;}
+    p.rectifies=p.rectifies||[];
+    p.rectifies.push({title, note:document.getElementById('rfNote').value.trim(), status:'未关闭', at:stepNow()});
+    pushChange(p,'打开整改','未填', title);
+    toast('已打开整改');render();
+  });
+}
+function previewProjectFile(id, i){
+  const p=findProject(id);if(!p||!p.files[i]) return;
+  const f=p.files[i];
+  const kind=drawingKind(f.type, f.name);
+  document.getElementById('previewTitle').textContent=f.name||'预览';
+  const body=document.getElementById('previewBody');
+  if(kind==='image'&&f.url) body.innerHTML='<img class="preview-image" alt="" src="'+f.url+'">';
+  else if(kind==='pdf'&&f.url) body.innerHTML='<iframe class="preview-frame" title="预览" src="'+f.url+'"></iframe>';
+  else body.textContent='这个格式不能在页面里看，可以下载。';
+  previewJob=function(){
+    const a=document.createElement('a');
+    let made='';
+    if(f.url) a.href=f.url;
+    else {made=URL.createObjectURL(new Blob(['原型示意文件'],{type:'text/plain'}));a.href=made;}
+    a.download=f.name||'file';
+    a.click();
+    if(made) setTimeout(()=>URL.revokeObjectURL(made),1000);
+  };
+  openModal('previewModal');
+}
+function deleteProjectFile(id, i){
+  const p=findProject(id);if(!p||!p.files[i]) return;
+  const f=p.files[i];
+  const st=p.steps.find(s=>s.seq===f.seq);
+  if(p.lost||(st&&(st.status==='已完成'||st.status==='不适用'))){toast('这一步已经结束，文件不能删');return;}
+  openModule('删除文件', `<p style="margin:0">删除「${esc(f.name)}」？</p>`, ()=>{
+    if(f.url) URL.revokeObjectURL(f.url);
+    p.files.splice(i,1);
+    syncProject(p);
+    toast('已删除');
+    render();
+  });
+}
 function openCreateProject(){
   const selectable=customers.filter(c=>c.serviceType!=='分发'&&c.boardStage!=='已分发'&&c.status!=='已流失');
   openModule('立项', `
-    <p class="page-note">可以选择已有客户，也可以直接新增。新增要填城市和渠道。已分发的客户不能立项。合同金额在客户签字时按最终报价写入。设计师在这里指定，设计动作只给这个人。</p>
+    <p class="page-note">可以选择已有客户，也可以直接新增。新增要填城市和渠道。已分发的客户不能立项。合同金额在客户签字时按最终报价写入。设计师在这里指定，设计动作只给这个人。定金在第一步上传定金合同时入账。</p>
     <div class="form-group"><label>客户</label><div class="segment" id="pMode">
       <button type="button" class="active" data-v="old" onclick="setProjectMode(this)">选择已有</button>
       <button type="button" data-v="new" onclick="setProjectMode(this)">直接新增</button>
@@ -310,9 +876,9 @@ function submitProject(){
   if(!address){fieldError('pAddressGroup');ok=false;}
   let customer;
   if(mode==='old'){
-    const id=document.getElementById('pCustomer').value;
-    if(!id){fieldError('pCustomerGroup');ok=false;}
-    customer=customers.find(x=>x.id===id);
+    const cid=document.getElementById('pCustomer').value;
+    if(!cid){fieldError('pCustomerGroup');ok=false;}
+    customer=customers.find(x=>x.id===cid);
     if(customer&&(customer.serviceType==='分发'||customer.boardStage==='已分发')){toast('已分发的客户不能立项');return false;}
   } else {
     const name=document.getElementById('pName').value.trim();
@@ -334,7 +900,12 @@ function submitProject(){
   const deposit=Number(document.getElementById('pDeposit').value)||0;
   const n=CONTRACTS.length+1;
   const id='HT-202611-'+String(100+n).slice(-3);
-  CONTRACTS.unshift({id, customerId:customer.id, customerName:customer.name, phone:customer.phone, designer, address, stage:'设计中', amount:0, due:deposit?-deposit:0, days:45, ended:false, lost:false, progress:'节点判断 0/5 · 平面 0/2 · 深化 0/4 · 复测下单 0/9 · 生产安装 0/5 · 验收 0/2', action:{name:'输出平面图', group:'平面', status:'未开始', needFile:true, uploaded:false, blocker:'还要上传平面图。齐了才能点完成。'}, product:document.getElementById('pProduct').value.trim()});
+  const project={id, customerId:customer.id, customerName:customer.name, phone:customer.phone, designer, address, stage:'设计中', amount:0, due:0, days:45, ended:false, lost:false,
+    product:document.getElementById('pProduct').value.trim(), civil:'未进场', measureDate:'', needMeasure:'是', promise:'', quoteAmount:'', installDate:'', installDays:'', sitePhone:'',
+    depositHint:deposit>0?deposit:'', files:[], factories:[], rectifies:[], changes:[], steps:seedSteps(0)};
+  syncProject(project);
+  pushChange(project,'立项','未填', id);
+  CONTRACTS.unshift(project);
   if(customer.status!=='已成交'){customer.status='已成交';customer.boardStage='已成交';}
   toast('已立项 '+id);render();
 }
@@ -349,7 +920,7 @@ function renderFinance(){
       <div class="kpi"><div class="n">${money(EXPENSES.filter(x=>!x.unpaid&&x.date.startsWith(TODAY.slice(0,7))).reduce((a,x)=>a+x.amount,0))}</div><div class="l">本月开支</div></div>
       <div class="kpi"><div class="n">${money(s.net)}</div><div class="l">本月净额</div></div>
     </div>
-    <p class="page-note">待收待付记在下面。项目列用合同号。统计截止 ${TODAY}</p>
+    <p class="page-note">待收待付记在下面。项目列用项目号。统计截止 ${TODAY}</p>
     <div class="table-wrap"><table class="data"><thead><tr><th>种类</th><th>方向</th><th>金额</th><th>科目</th><th>计入成本</th><th>发生日</th><th>项目</th><th>尚未付出</th></tr></thead><tbody>
       ${LEDGER.map(x=>`<tr><td>${esc(x.kind)}</td><td>${esc(x.dir)}</td><td>${money(x.amount)}</td><td>${esc(x.subject||'—')}</td><td>${x.cost?'是':'—'}</td><td>${esc(x.date)}</td><td>${esc(x.project||'—')}</td><td>${x.unpaid?'是':'—'}</td></tr>`).join('')}
     </tbody></table></div>
@@ -486,8 +1057,8 @@ function renderBoard(){
     <div class="block-title">逾期项目</div>
     <div class="empty-inline">没有逾期项目</div>
     <p class="page-note">毛利率 =（订单总额 − 成本）÷ 订单总额。低于 ${low}% 标红，高于 ${high}% 写成本可能没录全。</p>
-    <div class="table-wrap"><table class="data"><thead><tr><th>合同</th><th>阶段</th><th>订单总额</th><th>成本</th><th>毛利率</th><th>说明</th></tr></thead><tbody>
-      ${margins.map(m=>`<tr><td>${esc(m.p.id)}</td><td>${esc(m.p.stage)}</td><td>${money(m.p.amount)}</td><td>${money(m.cost)}</td><td class="${m.cls}">${m.rate.toFixed(2)}%</td><td>${esc(m.note||'—')}</td></tr>`).join('')||'<tr><td colspan="6">还没有可算毛利率的合同</td></tr>'}
+    <div class="table-wrap"><table class="data"><thead><tr><th>项目</th><th>阶段</th><th>订单总额</th><th>成本</th><th>毛利率</th><th>说明</th></tr></thead><tbody>
+      ${margins.map(m=>`<tr><td>${esc(m.p.id)}</td><td>${esc(m.p.stage)}</td><td>${money(m.p.amount)}</td><td>${money(m.cost)}</td><td class="${m.cls}">${m.rate.toFixed(2)}%</td><td>${esc(m.note||'—')}</td></tr>`).join('')||'<tr><td colspan="6">还没有可算毛利率的项目</td></tr>'}
     </tbody></table></div>
   `);
 }
@@ -629,3 +1200,25 @@ function deleteDealer(id){
     render();
   });
 }
+
+function hydrateProjects(){
+  const lin=CONTRACTS.find(x=>x.id==='HT-202611-002');
+  lin.steps=seedSteps(5,{
+    1:{at:'2026-11-05 09:27', by:'老板'},
+    2:{at:'2026-11-05 09:27', by:'系统', note:'系统已生成项目'},
+    3:{at:'2026-11-05 09:27', by:'设计老张'},
+    4:{at:'2026-11-05 09:28', by:'助理小邓'},
+    5:{at:'2026-11-05 09:28', by:'设计老张'},
+    7:{plan:'2026-11-12'},
+    9:{plan:'2026-11-10'},
+    11:{plan:'2026-11-10'}
+  });
+  const wu=CONTRACTS.find(x=>x.id==='HT-202611-001');
+  wu.steps=seedSteps(27,{
+    8:{status:'不适用', reason:'不需要', by:'设计小王', at:'2026-10-16 10:00'},
+    10:{status:'不适用', reason:'不需要', by:'设计小王', at:'2026-10-18 10:00'},
+    27:{status:'不适用', reason:'不需要', by:'销售小李', at:'2026-11-01 10:00'}
+  });
+  CONTRACTS.forEach(syncProject);
+}
+hydrateProjects();

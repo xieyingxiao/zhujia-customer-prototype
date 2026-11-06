@@ -418,6 +418,15 @@ textarea.input{height:auto;min-height:88px;padding:10px 12px;resize:vertical;lin
 .submod{display:flex;gap:4px;margin:0 0 16px;border-bottom:1px solid var(--border)}
 .submod button{background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-1px;padding:8px 14px;font-size:14px;color:var(--text-secondary);cursor:pointer}
 .submod button.active{color:var(--primary);border-bottom-color:var(--primary);font-weight:600}
+.group-chips{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px}
+.group-chip{border:1px solid var(--border);background:#fff;border-radius:999px;padding:6px 12px;font-size:13px;color:var(--text-secondary);cursor:pointer}
+.group-chip b{color:var(--text);font-weight:600;margin-left:4px}
+.group-chip.on{border-color:#93c5fd;background:#eff6ff;color:var(--primary)}
+.group-chip.on b{color:var(--primary)}
+tr.step-now td{background:#f8fbff}
+tr.step-locked td{color:var(--text-muted)}
+.banner-lost{background:#fef2f2;border:1px solid #fecaca;color:#991b1b;border-radius:8px;padding:12px 14px;margin:0 0 14px;font-size:13px;line-height:1.6}
+.step-ops{display:flex;flex-wrap:wrap;gap:6px}
 .rule-off{opacity:.45}
 .margin-bad{color:var(--danger);font-weight:600}
 .margin-warn{color:var(--warning);font-weight:600}
@@ -652,6 +661,7 @@ textarea.input{height:auto;min-height:88px;padding:10px 12px;resize:vertical;lin
     <li>上传图纸先选类型和文件。一位客户只留一张，再传会换掉原来的。可以预览和删除</li>
     <li>今日待办左右分成未签约客户和已签约项目</li>
     <li>项目合同改名为项目管理。待办动作收进项目管理，和合同并排切换</li>
+    <li>项目管理里的子模块改叫项目，打开后是项目详情。详情按 27 个步骤往下走，当前这一步才能上传、完成或标不适用</li>
     <li>记跟进可写方式/内容/下次时间，真追加</li>
     <li>建档打开不报错；失焦/提交才校验；重复提示</li>
     <li>批量建档三步：模板→上传→结果</li>
@@ -723,7 +733,7 @@ function stageBadge(s){
 function statusBadge(s){return `<span class="badge badge-status-${s}">${s}</span>`;}
 function projectHtml(c){
   const list=typeof CONTRACTS==='undefined'?[]:CONTRACTS.filter(p=>p.customerId===c.id);
-  if(!list.length) return '<div class="empty-inline">还没有关联项目。立项之后，这个客户的合同会出现在这里。</div>';
+  if(!list.length) return '<div class="empty-inline">还没有关联项目。立项之后，这个客户的项目会出现在这里。</div>';
   return `<div class="project-list">${list.map(p=>`
     <button type="button" class="project-card" onclick="goProject('${p.id}')">
       <div>
@@ -825,7 +835,7 @@ function updateChrome(){
   const bc=document.getElementById('breadcrumb');const tabs=document.getElementById('tabsBar');
   const parent=state.view==='detail'?'list':(state.view==='projectDetail'||state.view==='actions')?'project':state.view;
   const parentName=VIEW_NAME[parent]||'销售管理';
-  const cur=state.view==='detail'?'客户详情':state.view==='projectDetail'?'合同详情':state.view==='actions'?'待办动作':parentName;
+  const cur=state.view==='detail'?'客户详情':state.view==='projectDetail'?'项目详情':state.view==='actions'?'待办动作':parentName;
   if(state.view==='detail'||state.view==='projectDetail'||state.view==='actions'){
     const back=state.view==='actions'?'actions':'project';
     bc.innerHTML=`<span>住家研选</span><span class="sep">/</span><a href="${VIEW_HASH[parent]}" onclick="goView('${parent}');return false">${parentName}</a><span class="sep">/</span><span class="cur">${cur}</span>`;
@@ -1207,6 +1217,7 @@ function onDrawFile(){
   if(ok) ok.disabled=!file;
 }
 function previewDrawing(){
+  previewJob=null;
   const c=customers.find(x=>x.id===state.detailId);if(!c||!c.drawing)return;
   const d=c.drawing;
   const kind=drawingKind(d.type, d.name);
@@ -1218,6 +1229,7 @@ function previewDrawing(){
   openModal('previewModal');
 }
 function downloadDrawing(){
+  if(typeof previewJob==='function'){previewJob();return;}
   const c=customers.find(x=>x.id===state.detailId);if(!c||!c.drawing)return;
   const a=document.createElement('a');
   let made='';
