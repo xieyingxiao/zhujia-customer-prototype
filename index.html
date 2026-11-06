@@ -194,6 +194,9 @@ tr:hover .copy-btn,.phone-cell:hover .copy-btn,.wx-cell:hover .copy-btn,.card:ho
 @media(max-width:900px){.info-grid{grid-template-columns:repeat(2,1fr)}}
 .info-item label{display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px}
 .info-item .val{font-size:14px;font-weight:500;color:var(--text);word-break:break-all}
+.grade-edit{display:flex;gap:6px;flex-wrap:wrap}
+.grade-edit button{height:28px;padding:0 10px;border-radius:6px;border:1px solid var(--border);background:#fff;font-size:13px;font-weight:500;color:var(--text-secondary)}
+.grade-edit button.active{border-color:var(--primary);background:var(--primary-light);color:var(--primary)}
 .info-item .val.muted{font-weight:400;color:var(--text-secondary)}
 .steps{display:flex;gap:0;margin-bottom:20px;overflow-x:auto;padding-bottom:4px}
 .step{flex:1;min-width:120px;position:relative;padding:14px 12px;background:var(--bg);border:1px solid var(--border);text-align:center}
@@ -624,9 +627,9 @@ textarea.input{height:auto;min-height:88px;padding:10px 12px;resize:vertical;lin
     <li>新增「下次/最近跟进」，过期红、今天橙，默认可排序</li>
     <li>状态列合并：以跟进状态为主（新线索/已联系/已成交/已流失）；原「看板阶段·跟进中」并入接待步骤条，列表不再重复；「一级」改「来源」并与渠道合并显示</li>
     <li>筛选改为标签页（全部/待跟进/已成交/流失）+ 搜索 + 分级/来源</li>
-    <li>「意向」改为「分级」：列表、建档、详情顶部都显示；记跟进时可改分级</li>
+    <li>「意向」改为「分级」：列表、建档、详情顶部都显示；详情里可以直接改</li>
     <li>详情增加关联项目，一个客户可挂多个项目</li>
-    <li>补上原页面能力：导出、阶段筛选、暂缓与回访日、流失原因、预报价「不做」、分发原因与预算较高</li>
+    <li>补上原页面能力：阶段筛选、暂缓与回访日、流失原因、预报价「不做」、分发原因与预算较高</li>
     <li>操作列：记跟进 / 查看；空值「—」；空状态</li>
     <li>补上工作台、今日待办、待办动作、项目合同、收支记账、经营看板、规则设置，并和客户、分级、关联项目连在一起</li>
     <li>详情：上半信息加「服务类型」（自营/分发）；「记下跟进」主按钮；步骤条；时间线；预报价禁用原因留在接待进度</li>
@@ -854,7 +857,6 @@ function renderList(){
         <div class="toolbar-left">
           <button class="btn btn-primary" onclick="openCreate()">建档</button>
           <button class="btn btn-default" onclick="openBatch()">批量建档</button>
-          <button class="btn btn-default" onclick="exportCustomers()">导出</button>
           <button class="btn btn-icon" title="刷新" onclick="toast('已刷新')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg></button>
         </div>
         <div class="toolbar-right">
@@ -889,18 +891,9 @@ function renderList(){
 function setFilterTab(t){state.filterTab=t;render()}
 function onSearch(v){state.search=v;render()}
 function clearFilters(){state.search='';state.intentFilter='';state.sourceFilter='';state.stageFilter='';state.filterTab='全部';render()}
-function exportCustomers(){
-  const list=filtered();
-  const head=['编号','姓名','电话','微信','城市','来源','渠道','分级','跟进状态','阶段','下次跟进','最近跟进','积分'];
-  const lines=[head.join(',')].concat(list.map(c=>[c.id,c.name,c.phone,c.wechat,c.city,c.source,c.channel,gradeLabel(c.intent),c.status,c.boardStage,c.nextFollow||'',c.lastFollow||'',c.points==null?'':c.points].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')));
-  const blob=new Blob(['\ufeff'+lines.join('\n')],{type:'text/csv;charset=utf-8'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='客户跟进.csv';a.click();
-  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
-  toast('已导出 '+list.length+' 条');
-}
 function toggleSort(k){if(state.sortKey===k)state.sortDir=state.sortDir==='asc'?'desc':'asc';else{state.sortKey=k;state.sortDir='asc'}render();}
 
-const STEPS=['建档','首次联系','定意向','邀约到店','到店接待','预报价'];
+const STEPS=['建档','首次联系','邀约到店','到店接待','预报价'];
 function renderDetail(){
   const c=customers.find(x=>x.id===state.detailId);
   if(!c){goList();return}
@@ -912,12 +905,11 @@ function renderDetail(){
     else if(n === c.reception+1){cls='current';meta='当前';}
     else {cls='pending';meta='未开始';}
     if(cls==='done'&&n===2&&c.follows[0]){meta=`老板 · ${c.follows[0].time.slice(0,16)}`;}
-    if(n===6 && c.quote==='不做'){meta='不做'+(c.quoteSkipReason?' · '+esc(c.quoteSkipReason):'');}
+    if(n===5 && c.quote==='不做'){meta='不做'+(c.quoteSkipReason?' · '+esc(c.quoteSkipReason):'');}
     if(n>c.reception){
-      if(n===3) action=`<div class="step-action"><button class="btn btn-sm ${cls==='current'?'btn-primary':'btn-default'}" onclick="completeIntentStep()">定意向</button></div>`;
-      if(n===4) action=`<div class="step-action"><button class="btn btn-sm ${cls==='current'?'btn-primary':'btn-default'}" onclick="markReception(4,'已记录邀约')">邀约</button></div>`;
-      if(n===5) action=`<div class="step-action"><button class="btn btn-sm ${cls==='current'?'btn-primary':'btn-default'}" onclick="markVisit()">到店</button></div>`;
-      if(n===6 && c.quote!=='不做'){
+      if(n===3) action=`<div class="step-action"><button class="btn btn-sm ${cls==='current'?'btn-primary':'btn-default'}" onclick="markReception(3,'已记录邀约')">邀约</button></div>`;
+      if(n===4) action=`<div class="step-action"><button class="btn btn-sm ${cls==='current'?'btn-primary':'btn-default'}" onclick="markVisit()">到店</button></div>`;
+      if(n===5 && c.quote!=='不做'){
         const ready=c.hasDrawing && cls==='current';
         action=`<div class="step-action"><button class="btn btn-sm btn-primary" ${ready?'':'disabled title="'+(c.hasDrawing?'先完成前面的接待':'先上传图纸')+'"'} onclick="markQuoteSent()">预算已发</button><button class="btn btn-sm btn-default" onclick="openSkipQuote()">不做</button></div>`;
       }
@@ -949,23 +941,19 @@ function renderDetail(){
           <button class="btn btn-primary" onclick="openFollow()">记下跟进</button>
         </div>
       </div>
-      <div class="info-grid info-grid-5">
-        <div class="info-item"><label>分级</label><div class="val">${intentBadge(c.intent)}</div></div>
+      <div class="info-grid">
+        <div class="info-item"><label>分级</label><div class="val"><div class="grade-edit">${['','A','B','C'].map(g=>`<button type="button" class="${(c.intent||'')===g?'active':''}" onclick="setDetailGrade('${g}')">${g?g+'级':'未分级'}</button>`).join('')}</div></div></div>
         <div class="info-item"><label>电话</label><div class="val phone-cell"><span class="phone">${fmtPhone(c.phone)}</span><button class="copy-btn" style="opacity:1" onclick="copyText('${c.phone}',event)">${iconCopy()}</button></div></div>
         <div class="info-item"><label>微信</label><div class="val wx-cell"><span>${esc(c.wechat)}</span> <button class="copy-btn" style="opacity:1" onclick="copyText('${c.wechat}',event)">${iconCopy()}</button></div></div>
         <div class="info-item"><label>城市</label><div class="val">${esc(c.city)}</div></div>
         <div class="info-item"><label>来源 · 渠道</label><div class="val">${esc(c.source)} · ${esc(c.channel)}</div></div>
         <div class="info-item"><label>服务类型</label><div class="val" style="display:flex;align-items:center;flex-wrap:wrap;gap:4px">${serviceBadge(c)}</div></div>
-        <div class="info-item"><label>阶段</label><div class="val">${esc(c.boardStage||'—')}</div></div>
-        <div class="info-item"><label>积分</label><div class="val">${c.points==null?'—':Number(c.points).toFixed(2)}</div></div>
-        <div class="info-item"><label>联系</label><div class="val">${esc(c.contactNote||'—')}</div></div>
-        <div class="info-item"><label>预报价</label><div class="val">${esc(quoteText(c))}</div></div>
         <div class="info-item"><label>下次跟进</label><div class="val">${fmtNextFollow(c.nextFollow)}</div></div>
         ${c.returnVisit?`<div class="info-item"><label>回访日</label><div class="val">${esc(c.returnVisit)}</div></div>`:''}
         ${c.lostReason?`<div class="info-item"><label>流失原因</label><div class="val">${esc(c.lostReason)}</div></div>`:''}
       </div>
       <div class="section"><div class="section-title">关联项目 <span style="font-weight:400;color:var(--text-muted);font-size:12px">${(c.projects||[]).length}</span></div>${projectHtml(c)}</div>
-      <div class="section"><div class="section-title">接待进度 <span style="font-weight:400;color:var(--text-muted);font-size:12px">${Math.min(c.reception,6)}/6</span></div><div class="steps">${stepsHtml}</div></div>
+      <div class="section"><div class="section-title">接待进度 <span style="font-weight:400;color:var(--text-muted);font-size:12px">${Math.min(c.reception,STEPS.length)}/${STEPS.length}</span></div><div class="steps">${stepsHtml}</div></div>
       <div class="detail-grid">
         <div>
           <div class="section"><div class="section-title">图纸</div>
@@ -1114,16 +1102,19 @@ function advanceReception(n){
   if(c.reception!==n-1){toast('请先完成上一步接待');return null;}
   c.reception=n;return c;
 }
-function completeIntentStep(){
-  const c=advanceReception(3);if(!c)return;
-  toast('已定意向');render();
+function setDetailGrade(grade){
+  const c=customers.find(x=>x.id===state.detailId);if(!c)return;
+  c.intent=grade;
+  c.points=Object.prototype.hasOwnProperty.call(GRADE_POINTS,grade)?GRADE_POINTS[grade]:null;
+  toast(grade?'已改为 '+grade+'级':'已改为未分级');
+  render();
 }
 function markReception(n,msg){
   const c=advanceReception(n);if(!c)return;
   toast(msg);render();
 }
 function markVisit(){
-  const c=advanceReception(5);if(!c)return;
+  const c=advanceReception(4);if(!c)return;
   c.visits.unshift({time:TODAY,note:'到店接待'});
   toast('已记录到店');render();
 }
@@ -1134,7 +1125,7 @@ function uploadDrawing(){
 function markQuoteSent(){
   const c=customers.find(x=>x.id===state.detailId);if(!c)return;
   if(!c.hasDrawing){toast('先上传图纸');return;}
-  if(!advanceReception(6))return;
+  if(!advanceReception(5))return;
   c.quote='已发';c.quoteSkipReason='';
   toast('预算已发');render();
 }
