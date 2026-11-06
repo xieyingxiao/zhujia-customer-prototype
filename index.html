@@ -426,7 +426,7 @@ textarea.input{height:auto;min-height:88px;padding:10px 12px;resize:vertical;lin
       <a class="nav-item" data-view="project" href="#/project"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>项目合同</a>
       <a class="nav-item" data-view="finance" href="#/finance"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>收支记账</a>
       <a class="nav-item" data-view="board" href="#/board"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>经营看板</a>
-      <a class="nav-item" data-view="dealers" href="#/dealers"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l2-5h14l2 5M3 9h18v11a1 1 0 01-1 1H4a1 1 0 01-1-1z"/><path d="M9 21v-6h6v6M3 9a3 3 0 006 0 3 3 0 006 0 3 3 0 006 0"/></svg>经销商</a>
+      <a class="nav-item" data-view="dealers" href="#/dealers"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l2-5h14l2 5M3 9h18v11a1 1 0 01-1 1H4a1 1 0 01-1-1z"/><path d="M9 21v-6h6v6M3 9a3 3 0 006 0 3 3 0 006 0 3 3 0 006 0"/></svg>合作伙伴</a>
       <a class="nav-item" data-view="rules" href="#/rules"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>规则设置</a>
     </nav>
   </aside>
@@ -583,13 +583,13 @@ textarea.input{height:auto;min-height:88px;padding:10px 12px;resize:vertical;lin
         </div>
       </div>
       <div class="form-group" id="dealerGroup">
-        <label>经销商 <span class="req">*</span> <span class="hint">从名录里多选</span></label>
+        <label>合作伙伴 <span class="req">*</span> <span class="hint">从名录里多选</span></label>
         <div class="dealer-box" id="dealerBox">
           <div class="dealer-tags" id="dealerTags"></div>
-          <input class="dealer-input" id="dealerInput" placeholder="搜索或回车添加经销商" autocomplete="off" />
+          <input class="dealer-input" id="dealerInput" placeholder="搜索合作伙伴" autocomplete="off" />
         </div>
         <div class="dealer-list" id="dealerList"></div>
-        <div class="form-error" id="dealerErr">请至少选择一位经销商</div>
+        <div class="form-error" id="dealerErr">请至少选择一位合作伙伴</div>
       </div>
     </div>
     <div class="modal-footer"><button class="btn btn-default" onclick="closeModal('assignModal')">取消</button><button class="btn btn-primary" onclick="confirmAssign()">确定</button></div>
@@ -627,8 +627,8 @@ textarea.input{height:auto;min-height:88px;padding:10px 12px;resize:vertical;lin
     <li>操作列：记跟进 / 查看；空值「—」；空状态</li>
     <li>补上工作台、今日待办、待办动作、项目合同、收支记账、经营看板、规则设置，并和客户、分级、关联项目连在一起</li>
     <li>详情：上半信息加「服务类型」（自营/分发）；「记下跟进」主按钮；步骤条；时间线；预报价禁用原因留在接待进度</li>
-    <li>分发：不可服务只保留超出半径和其他，从经销商名录里多选；确定后服务类型变分发并记入时间线</li>
-    <li>经销商单独成页：添加、编辑、停用、删除。停用后不再出现在分发里，已经分出的客户仍保留名字</li>
+    <li>分发：不可服务只保留超出半径和其他，从合作伙伴名录里多选；确定后服务类型变分发并记入时间线</li>
+    <li>合作伙伴单独成页：添加、编辑、停用、删除。停用后不再出现在分发里，已经分出的客户仍保留名字</li>
     <li>邀约、到店先弹出确认：到店时间必填；到店还可以填接待方式和接待人</li>
     <li>记跟进可写方式/内容/下次时间，真追加</li>
     <li>建档打开不报错；失焦/提交才校验；重复提示</li>
@@ -777,7 +777,7 @@ function filtered(){
   return list;
 }
 const VIEW_HASH={dashboard:'#/dashboard',today:'#/today',actions:'#/actions',list:'#/list',project:'#/project',finance:'#/finance',board:'#/board',dealers:'#/dealers',rules:'#/rules'};
-const VIEW_NAME={dashboard:'工作台',today:'今日待办',actions:'待办动作',list:'客户跟进',project:'项目合同',finance:'收支记账',board:'经营看板',dealers:'经销商',rules:'规则设置'};
+const VIEW_NAME={dashboard:'工作台',today:'今日待办',actions:'待办动作',list:'客户跟进',project:'项目合同',finance:'收支记账',board:'经营看板',dealers:'合作伙伴',rules:'规则设置'};
 function goList(){location.hash='#/list';if(location.hash==='#/list'){applyHash();render();}if(state.listScroll)requestAnimationFrame(()=>{const el=document.getElementById('content');if(el)el.scrollTop=state.listScroll});}
 function goDetail(id){if(document.getElementById('content'))state.listScroll=document.getElementById('content').scrollTop;location.hash='#/detail/'+id;}
 function goProject(id){location.hash='#/project/'+id;}
@@ -1210,7 +1210,7 @@ function renderDealerList(q){
   const qq=(q||'').trim().toLowerCase();
   let opts=DEALERS.filter(d=>d.active && (!qq||d.name.toLowerCase().includes(qq)||d.city.includes(qq)||(d.contact||'').includes(qq)));
   if(!opts.length){
-    list.innerHTML=`<div class="dealer-empty">${qq?'没有这家经销商。':'名录是空的。'}<button type="button" class="btn btn-text btn-sm" onclick="closeModal('assignModal');goView('dealers')">去经销商添加</button></div>`;
+    list.innerHTML=`<div class="dealer-empty">${qq?'没有这家合作伙伴。':'名录是空的。'}<button type="button" class="btn btn-text btn-sm" onclick="closeModal('assignModal');goView('dealers')">去合作伙伴添加</button></div>`;
     return;
   }
   list.innerHTML=opts.map(d=>{
@@ -1271,7 +1271,7 @@ function confirmAssign(){
   const dealerStr=c.dealers.join('、');
   c.follows.unshift({
     method:'其他',
-    content:`已分发：原因「${reasonText}」· 经销商 ${dealerStr}`,
+    content:`已分发：原因「${reasonText}」· 合作伙伴 ${dealerStr}`,
     time:now, author:'老板', next:null
   });
   c.lastFollow=now;

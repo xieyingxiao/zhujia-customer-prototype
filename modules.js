@@ -42,8 +42,8 @@ let ACCOUNTS = [
   {account:'yanxuan-accept-pm', name:'项目经理小张', role:'项目经理', status:'已开通', modules:'今日待办、待办动作、客户跟进、项目合同、收支记账、经营看板'},
   {account:'yanxuan-accept-sales', name:'销售小李', role:'销售', status:'已开通', modules:'今日待办、待办动作、客户跟进、项目合同、收支记账、经营看板'}
 ];
-const MODULE_OPTIONS = ['今日待办','待办动作','客户跟进','项目合同','收支记账','经营看板','经销商','规则设置'];
-const ROLE_MODULES = {负责人:MODULE_OPTIONS, 设计师:['今日待办','待办动作','项目合同'], 助理:['今日待办','待办动作','客户跟进','项目合同'], 财务:['今日待办','客户跟进','项目合同','收支记账','经营看板','规则设置'], 安装队:['今日待办','待办动作','项目合同'], 销售:['今日待办','待办动作','客户跟进','项目合同','收支记账','经营看板','经销商'], 项目经理:['今日待办','待办动作','客户跟进','项目合同','收支记账','经营看板']};
+const MODULE_OPTIONS = ['今日待办','待办动作','客户跟进','项目合同','收支记账','经营看板','合作伙伴','规则设置'];
+const ROLE_MODULES = {负责人:MODULE_OPTIONS, 设计师:['今日待办','待办动作','项目合同'], 助理:['今日待办','待办动作','客户跟进','项目合同'], 财务:['今日待办','客户跟进','项目合同','收支记账','经营看板','规则设置'], 安装队:['今日待办','待办动作','项目合同'], 销售:['今日待办','待办动作','客户跟进','项目合同','收支记账','经营看板','合作伙伴'], 项目经理:['今日待办','待办动作','客户跟进','项目合同','收支记账','经营看板']};
 
 function money(n){return Number(n||0).toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function ruleValue(name, fallback){const r=RULES.find(x=>x.name===name);if(!r||!r.enabled)return fallback;const n=Number(r.value);return Number.isFinite(n)?n:fallback;}
@@ -554,10 +554,10 @@ function renderDealers(){
   pageShell(`
     <p class="page-note">分发客户时从这里选。在这一页添加、修改、停用或删除。停用后分发列表不再出现，已经分出去的客户仍保留这家名字。</p>
     <div class="toolbar">
-      <div class="toolbar-left"><button class="btn btn-primary" onclick="openDealer()">添加经销商</button></div>
+      <div class="toolbar-left"><button class="btn btn-primary" onclick="openDealer()">添加合作伙伴</button></div>
       <div class="toolbar-right"><div class="search-box ${q?'has-value':''}"><svg class="ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg><input placeholder="名称、城市、联系人或电话" value="${esc(q)}" oninput="state.dealerQ=this.value;render()" /><button class="clear" onclick="state.dealerQ='';render()" aria-label="清除">${iconClose()}</button></div></div>
     </div>
-    <div class="table-wrap"><table class="data"><thead><tr><th>名称</th><th>城市</th><th>联系人</th><th>电话</th><th>已分发</th><th>状态</th><th class="col-ops">操作</th></tr></thead><tbody>${rows||`<tr><td colspan="7">${q?'没有匹配的经销商':'还没有经销商，点「添加经销商」建第一家。'}</td></tr>`}</tbody></table></div>
+    <div class="table-wrap"><table class="data"><thead><tr><th>名称</th><th>城市</th><th>联系人</th><th>电话</th><th>已分发</th><th>状态</th><th class="col-ops">操作</th></tr></thead><tbody>${rows||`<tr><td colspan="7">${q?'没有匹配的合作伙伴':'还没有合作伙伴，点「添加合作伙伴」建第一家。'}</td></tr>`}</tbody></table></div>
     <p class="page-note" style="margin-top:12px">共 ${list.length} 家</p>
   `);
 }
@@ -565,7 +565,7 @@ function openDealer(id){
   const d=id?DEALERS.find(x=>x.id===id):null;
   if(id&&!d) return;
   const cur=d||{name:'',city:'',contact:'',phone:''};
-  openModule(id?'编辑经销商':'添加经销商', `
+  openModule(id?'编辑合作伙伴':'添加合作伙伴', `
     <div class="form-group" id="dNameGroup"><label>名称 <span class="req">*</span></label><input class="input" id="dName" value="${esc(cur.name)}" /><div class="form-error">请填写名称</div></div>
     <div class="form-group" id="dCityGroup"><label>城市 <span class="req">*</span></label><input class="input" id="dCity" value="${esc(cur.city)}" /><div class="form-error">请填写城市</div></div>
     <div class="form-group"><label>联系人</label><input class="input" id="dContact" value="${esc(cur.contact||'')}" /></div>
@@ -580,7 +580,7 @@ function openDealer(id){
     const nameErr=document.querySelector('#dNameGroup .form-error');
     nameErr.textContent='请填写名称';
     if(!name){fieldError('dNameGroup');ok=false;}
-    else if(DEALERS.some(x=>x.name===name && x.id!==id)){nameErr.textContent='已有同名经销商';fieldError('dNameGroup');ok=false;}
+    else if(DEALERS.some(x=>x.name===name && x.id!==id)){nameErr.textContent='已有同名合作伙伴';fieldError('dNameGroup');ok=false;}
     if(!city){fieldError('dCityGroup');ok=false;}
     if(phone && !/^1\d{10}$/.test(phone)){fieldError('dPhoneGroup');ok=false;}
     if(!ok) return false;
@@ -606,7 +606,7 @@ function deleteDealer(id){
   const d=DEALERS.find(x=>x.id===id);if(!d)return;
   const used=dealerUsers(d.name);
   const who=used.map(c=>c.name).join('、');
-  openModule('删除经销商', `<p style="margin:0 0 8px">确定删除「${esc(d.name)}」？</p><p class="page-note" style="margin:0">${used.length?`已经分给 ${esc(who)}。删除后这些客户上的名字还在，只是不能再新选这家。`:'还没有客户分给这家。删除后不能恢复。'}</p>`, ()=>{
+  openModule('删除合作伙伴', `<p style="margin:0 0 8px">确定删除「${esc(d.name)}」？</p><p class="page-note" style="margin:0">${used.length?`已经分给 ${esc(who)}。删除后这些客户上的名字还在，只是不能再新选这家。`:'还没有客户分给这家。删除后不能恢复。'}</p>`, ()=>{
     const i=DEALERS.findIndex(x=>x.id===id);
     if(i>=0) DEALERS.splice(i,1);
     toast('已删除 '+d.name);
