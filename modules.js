@@ -520,7 +520,7 @@ function renderProduction(){
     return (a.project.id+(a.content||'')).localeCompare(b.project.id+(b.content||''),'zh');
   });
   pageShell(`
-    <div class="page-head"><div><h1>生产协同</h1><p>一个项目可以拆成多包。齐套率是已完工或已到货的包数除以包数。总交期看最慢那个包的预测日，不取平均。</p></div></div>
+    <div class="page-head"><div><h1>生产协同</h1><p>一个项目可以拆成多包。齐套率是已完工或已到货的包数除以包数。总交期看最慢那个包的预测日。点一家工厂，右边只留这家的包。</p></div></div>
     ${projectSubnav('production')}
     <div class="kpis">
       <div class="kpi" style="cursor:default"><div class="lab">拆单包</div><div class="val">${packs.length}</div><div class="sub">${names.length} 家工厂</div></div>
@@ -528,40 +528,41 @@ function renderProduction(){
       <div class="kpi ${lateN?'attn':''}" style="cursor:default"><div class="lab">延期包</div><div class="val">${lateN}</div><div class="sub">预测已过，或晚于承诺</div></div>
       <div class="kpi" style="cursor:default"><div class="lab">已齐套项目</div><div class="val">${open.filter(p=>pkgReadiness(p)===100).length}</div><div class="sub">包都完工或到货</div></div>
     </div>
-    <p class="page-note">工厂卡片只汇总这家各状态有几包。点一家，拆单包只留这家，再点一次恢复全部。齐套看板和拆单包并排：包再多，也只在自己的表里滚动。</p>
-    ${names.length?`<div class="factory-grid">${names.map(name=>{
+    ${names.length?`<div class="fac-key">${PKG_STATUSES.map((s,i)=>`<span><i class="s${i}"></i>${esc(s)}</span>`).join('')}</div><div class="factory-grid">${names.map(name=>{
       const list=by[name];
       const late=list.filter(pkgLate).length;
-      const counts=PKG_STATUSES.map(s=>({s, n:list.filter(f=>pkgShownStatus(f)===s).length}));
-      return `<button type="button" class="factory-card ${late?'late':''} ${state.prodFactory===name?'on':''}" data-name="${esc(name)}" onclick="setProdFactory(this)"><div class="fh"><b>${esc(name)}</b>${late?`<span class="badge badge-stage-wait">${late} 延期</span>`:`<span class="badge badge-stage-done">正常</span>`}</div>
-        <div style="color:var(--text-muted);font-size:12px">在制 ${list.length} 包</div>
-        <div class="fac-counts">${counts.map(c=>`<div class="${c.s==='延期'&&c.n?'hot':''} ${c.n?'':'zero'}"><span class="k">${esc(c.s)}</span><span class="n">${c.n}</span></div>`).join('')}</div>
+      const counts=PKG_STATUSES.map((s,i)=>({s, i, n:list.filter(f=>pkgShownStatus(f)===s).length}));
+      const live=counts.filter(c=>c.n);
+      return `<button type="button" class="factory-card ${late?'late':''} ${state.prodFactory===name?'on':''}" data-name="${esc(name)}" onclick="setProdFactory(this)"><div class="fh"><b>${esc(name)}</b>${late?`<span class="badge badge-stage-wait">${late} 延期</span>`:`<span class="count">${list.length} 包</span>`}</div>
+        <div class="fac-bar">${live.map(c=>`<i class="s${c.i}" style="width:${(c.n/list.length*100).toFixed(2)}%"></i>`).join('')}</div>
+        <div class="fac-legend">${live.map(c=>`<span><i class="s${c.i}"></i>${esc(c.s)} <b>${c.n}</b></span>`).join('')}</div>
       </button>`;
     }).join('')}</div>`:`<div class="callout">还没有拆单包。打开项目详情，点「添加拆单包」。一个项目可以记多条，金额用来对账，不计入项目成本。</div>`}
-    <div class="prod-split">
-    <div class="panel"><div class="panel-hd"><h3>齐套看板</h3><span class="meta">按项目 · 点行打开</span></div>
-      <div style="padding:12px 16px 0"><div class="filter-tabs">${filters.map(k=>`<button class="filter-tab ${state.prodFilter===k?'active':''}" onclick="state.prodFilter='${k}';render()">${k}</button>`).join('')}</div></div>
-      <div class="table-wrap prod-scroll" style="border:none;border-radius:0"><table class="data"><thead><tr><th>项目</th><th>客户</th><th>包数</th><th>齐套率</th><th>缺哪个</th><th>最慢的包</th><th>预测日</th></tr></thead><tbody>
-        ${rows.map(p=>{
+    <div class="prod-board">
+      <section class="prod-col">
+        <div class="panel-hd"><h3>齐套看板</h3><span class="meta">点一行打开</span></div>
+        <div style="padding:12px 14px 0"><div class="filter-tabs">${filters.map(k=>`<button class="filter-tab ${state.prodFilter===k?'active':''}" onclick="state.prodFilter='${k}';render()">${k}</button>`).join('')}</div></div>
+        <div class="prod-scroll">${rows.length?rows.map(p=>{
           const list=p.factories||[];
           const rate=pkgReadiness(p);
           const miss=list.filter(f=>!pkgReady(f)).map(f=>f.content).join('、');
           const slow=pkgSlowest(p);
-          const bar=rate==null?'—':`<div style="display:flex;align-items:center;gap:8px"><div class="prog" style="flex:1"><i class="${rate>=100?'ok':rate<60?'risk':'warn'}" style="width:${rate}%"></i></div><span class="phone">${rate}%</span></div>`;
-          const tone=(list.some(pkgLate))?'row-hot':(!list.length?'row-watch':'');
-          return `<tr class="${tone}" onclick="goProject('${p.id}')"><td>${esc(p.id)}</td><td>${esc(p.customerName)}</td><td>${list.length}</td><td style="min-width:120px">${bar}</td><td>${list.length?(miss||'—'):'还没拆包'}</td><td>${slow?esc(slow.content+' · '+slow.name):'—'}</td><td>${slow?esc(slow.forecast):'—'}</td></tr>`;
-        }).join('')||'<tr><td colspan="7">这个筛选下没有项目</td></tr>'}
-      </tbody></table></div>
-    </div>
-    <div class="panel"><div class="panel-hd"><h3>拆单包</h3><span class="meta">${shown.length} 包 · 按预测日</span></div>
-      <div style="padding:12px 16px 0">
-        <div class="filter-tabs">${['全部'].concat(PKG_STATUSES).map(s=>`<button type="button" class="filter-tab ${state.prodStatus===s?'active':''}" onclick="setProdStatus('${s}')">${s}</button>`).join('')}</div>
-        <label class="check-row" style="margin:0 0 12px"><input type="checkbox" ${state.prodOpen?'checked':''} onchange="state.prodOpen=this.checked;render()" /><span class="check"></span><span class="check-text"><span>只看未齐</span></span></label>
-      </div>
-      <div class="table-wrap prod-scroll" style="border:none;border-radius:0"><table class="data"><thead><tr><th>项目</th><th>客户</th><th>品类</th><th>工厂</th><th>状态</th><th>承诺日</th><th>预测日</th></tr></thead><tbody>
-        ${shown.map(f=>`<tr class="${pkgLate(f)?'row-hot':''}" onclick="goProject('${f.project.id}')"><td>${esc(f.project.id)}</td><td>${esc(f.project.customerName)}</td><td>${esc(f.content||'—')}</td><td>${esc(f.name)}</td><td>${pkgBadge(f)}</td><td>${esc(f.promise||'—')}</td><td>${esc(f.forecast||'未填')}</td></tr>`).join('')||'<tr><td colspan="7">这个筛选下没有包</td></tr>'}
-      </tbody></table></div>
-    </div>
+          const tone=list.some(pkgLate)?'hot':(!list.length?'watch':'');
+          const sub=list.length?(miss?('还缺 '+miss):'包都齐了')+' · '+(slow?('最慢 '+slow.content+' '+slow.forecast):''):'还没拆包';
+          const bar=rate==null?'':`<div class="prog" style="margin-top:8px"><i class="${rate>=100?'ok':rate<60?'risk':'warn'}" style="width:${rate}%"></i></div>`;
+          return `<button type="button" class="kit-row ${tone}" onclick="goProject('${p.id}')"><div class="kit-top"><b>${esc(p.id)}</b><span class="who">${esc(p.customerName)}</span><span class="n">${list.length?rate+'%':'—'}</span></div>${bar}<div class="kit-sub">${esc(sub)}</div></button>`;
+        }).join(''):'<div class="kit-empty">这个筛选下没有项目</div>'}</div>
+      </section>
+      <section class="prod-col">
+        <div class="panel-hd"><h3>拆单包</h3><span class="meta">${shown.length} 包 · 按预测日</span></div>
+        <div style="padding:12px 14px 0;display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px">
+          <div class="filter-tabs" style="margin:0">${['全部'].concat(PKG_STATUSES).map(s=>`<button type="button" class="filter-tab ${state.prodStatus===s?'active':''}" onclick="setProdStatus('${s}')">${s}</button>`).join('')}</div>
+          <label class="check-row" style="margin:0"><input type="checkbox" ${state.prodOpen?'checked':''} onchange="state.prodOpen=this.checked;render()" /><span class="check"></span><span class="check-text"><span>只看未齐</span></span></label>
+        </div>
+        <div class="table-wrap prod-scroll" style="border:none;border-radius:0"><table class="data"><thead><tr><th>项目</th><th>客户</th><th>品类</th><th>工厂</th><th>状态</th><th>承诺日</th><th>预测日</th></tr></thead><tbody>
+          ${shown.map(f=>`<tr class="${pkgLate(f)?'row-hot':''}" onclick="goProject('${f.project.id}')"><td>${esc(f.project.id)}</td><td>${esc(f.project.customerName)}</td><td>${esc(f.content||'—')}</td><td>${esc(f.name)}</td><td>${pkgBadge(f)}</td><td>${esc(f.promise||'—')}</td><td>${esc(f.forecast||'未填')}</td></tr>`).join('')||'<tr><td colspan="7">这个筛选下没有包</td></tr>'}
+        </tbody></table></div>
+      </section>
     </div>
   `);
 }

@@ -490,28 +490,53 @@ table.data tbody tr.row-watch:hover td,table.data tbody tr.row-watch:hover td.co
 .tl-step .n{font-size:12.5px;font-weight:500;display:block}
 .tl-step.now .n{color:var(--danger)}
 .tl-step .t{font-size:11px;color:var(--text-muted)}
-.factory-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;margin-bottom:16px}
-.factory-card{padding:14px;background:#fff;border:1px solid var(--border);border-radius:10px;cursor:pointer;text-align:left;width:100%;font:inherit;color:inherit}
+.fac-key{display:flex;flex-wrap:wrap;gap:8px 14px;margin:0 0 10px;font-size:12px;color:var(--text-muted)}
+.fac-key i,.fac-legend i{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:5px}
+.factory-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-bottom:16px}
+.factory-card{padding:14px 14px 12px;background:#fff;border:1px solid var(--border);border-radius:10px;cursor:pointer;text-align:left;width:100%;font:inherit;color:inherit}
 .factory-card.on{border-color:var(--primary);box-shadow:0 0 0 1px var(--primary)}
-.factory-card .fh{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;gap:8px}
-.fac-counts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px 10px;margin-top:10px}
-.fac-counts .k{display:block;font-size:11px;color:var(--text-muted)}
-.fac-counts .n{font-size:14px;font-weight:600;font-variant-numeric:tabular-nums}
-.fac-counts .hot .n{color:var(--danger)}
-.fac-counts .zero .n{color:var(--text-muted);font-weight:500}
+.factory-card .fh{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.factory-card .fh b{font-size:14px}
+.factory-card .count{font-size:12px;color:var(--text-muted)}
+.fac-bar{display:flex;height:8px;border-radius:99px;overflow:hidden;background:var(--border-light);margin:12px 0 8px}
+.fac-bar i{display:block;height:100%}
+.fac-bar i.s0,.fac-key i.s0,.fac-legend i.s0{background:#D6D3D1}
+.fac-bar i.s1,.fac-key i.s1,.fac-legend i.s1{background:#FBBF24}
+.fac-bar i.s2,.fac-key i.s2,.fac-legend i.s2{background:#0F766E}
+.fac-bar i.s3,.fac-key i.s3,.fac-legend i.s3{background:#C2410C}
+.fac-bar i.s4,.fac-key i.s4,.fac-legend i.s4{background:#5EEAD4}
+.fac-bar i.s5,.fac-key i.s5,.fac-legend i.s5{background:#15803D}
+.fac-legend{display:flex;flex-wrap:wrap;gap:4px 10px;min-height:18px;font-size:12px;color:var(--text-secondary)}
+.fac-legend b{font-weight:600;color:var(--text);font-variant-numeric:tabular-nums}
+.prod-board{display:grid;grid-template-columns:minmax(280px,360px) minmax(0,1fr);background:#fff;border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.prod-col{min-width:0;display:flex;flex-direction:column}
+.prod-col+.prod-col{border-left:1px solid var(--border)}
+.prod-scroll{max-height:460px;overflow:auto}
+.prod-scroll thead th{position:sticky;top:0;z-index:2;background:#fff}
+.kit-row{display:block;width:100%;text-align:left;padding:12px 14px;border:none;border-bottom:1px solid var(--border-light);background:#fff;cursor:pointer;font:inherit;color:inherit}
+.kit-row:hover{background:#FAFAF9}
+.kit-row.hot{background:#FFF7ED;box-shadow:inset 3px 0 0 var(--danger)}
+.kit-row.hot:hover{background:#FFEDD5}
+.kit-row.watch{background:#FFFBEB;box-shadow:inset 3px 0 0 var(--warning)}
+.kit-row.watch:hover{background:#FEF3C7}
+.kit-top{display:flex;align-items:baseline;gap:8px}
+.kit-top b{font-size:13px}
+.kit-top .who{font-size:12.5px;color:var(--text-secondary)}
+.kit-top .n{margin-left:auto;font-size:12px;color:var(--text-muted);font-variant-numeric:tabular-nums}
+.kit-sub{margin-top:6px;font-size:12px;color:var(--text-muted);line-height:1.45}
+.kit-empty{padding:28px 16px;color:var(--text-muted);font-size:13px}
 .pkg-mini{padding:8px 0;border-top:1px solid var(--border-light);font-size:12.5px}
 .page-note{font-size:12.5px;color:var(--text-secondary);line-height:1.65;margin:0 0 14px;background:#fff;border:1px solid var(--border);border-radius:8px;padding:10px 12px}
 .block-title{font-size:15px;font-weight:600;margin:22px 0 10px;display:flex;align-items:center;justify-content:space-between;gap:8px}
 .today-split{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:16px;align-items:start}
-.prod-split{display:grid;grid-template-columns:minmax(320px,.9fr) minmax(0,1.2fr);gap:16px;align-items:start}
-.prod-split .panel{min-width:0}
-.prod-scroll{max-height:480px;overflow:auto}
-.prod-scroll thead th{position:sticky;top:0;z-index:2;background:#fff}
 .today-pane{min-width:0;background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px 16px}
 .today-pane .block-title{margin-top:0}
 .today-pane th.col-ops,.today-pane td.col-ops{position:sticky;right:0;z-index:2;background:#fff;box-shadow:-2px 0 4px rgba(0,0,0,.04)}
 .today-pane th.col-ops{background:#fafafa;z-index:3}
-@media(max-width:1100px){.today-split,.prod-split{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:1100px){
+  .today-split,.prod-board{grid-template-columns:minmax(0,1fr)}
+  .prod-col+.prod-col{border-left:none;border-top:1px solid var(--border)}
+}
 .mini-tabs{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
 .submod{display:flex;gap:4px;margin:0 0 16px;border-bottom:1px solid var(--border)}
 .submod button{background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-1px;padding:8px 14px;font-size:14px;color:var(--text-secondary);cursor:pointer}
@@ -770,6 +795,7 @@ tr.step-locked td{color:var(--text-muted)}
     <li>生产协同用冯雪 HT-202611-003 对照各包状态：待开工、备货中、生产中、已完工、已到货，以及预测已过的延期。吴婷的包仍是全部齐套。包金额不进项目成本</li>
     <li>生产协同的工厂卡片只汇总各状态有几包。点一家工厂，下面的包表按这家筛。包表按预测日排，可再按状态和未齐筛选。齐套看板仍按项目看</li>
     <li>齐套看板和拆单包并排。包表在自己的区域里滚动，包再多也不会把齐套看板顶到下面。窄屏时齐套看板在上</li>
+    <li>工厂卡片改成状态比例条，只写出有包的状态。齐套改成左侧清单，和拆单包放在同一块里</li>
     <li>记跟进可写方式/内容/下次时间，真追加</li>
     <li>建档打开不报错；失焦/提交才校验；重复提示</li>
     <li>批量建档三步：模板→上传→结果</li>
