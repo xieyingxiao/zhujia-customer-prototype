@@ -757,6 +757,7 @@ tr.step-locked td{color:var(--text-muted)}
     <li>财务中心去掉收货款。日常开支、内部提成、项目毛利各自单独一块</li>
     <li>逾期、缺文件、未收和毛利异常用暖色标出。数字是 0、已经收齐的，仍是白底</li>
     <li>日常开支、内部提成，以及吴婷项目的资料、整改、变更，放了示例数据。开支和提成不进项目成本。林晓仍然没有拆单包</li>
+    <li>生产协同用冯雪 HT-202611-003 对照各包状态：待开工、备货中、生产中、已完工、已到货，以及预测已过的延期。吴婷的包仍是全部齐套。包金额不进项目成本</li>
     <li>记跟进可写方式/内容/下次时间，真追加</li>
     <li>建档打开不报错；失焦/提交才校验；重复提示</li>
     <li>批量建档三步：模板→上传→结果</li>
@@ -788,7 +789,7 @@ let customers = [
   {id:'KH-2026-006',name:'郑浩',phone:'13800001006',wechat:'wx_zhenghao',city:'南京',source:'线下',channel:'老客户转介绍',intent:'C',status:'新线索',points:50,owner:'小李',serviceType:'自营',dealers:[],distributeReason:'',nextFollow:'2026-11-03 16:00',lastFollow:null,contactNote:'',hasDrawing:false,reception:1,follows:[],projects:[]},
   {id:'KH-2026-007',name:'孙莉',phone:'13800001007',wechat:'wx_sunli',city:'长沙',source:'线下',channel:'设计师/前端合作',intent:'',status:'新线索',points:null,owner:'老板',serviceType:'自营',dealers:[],distributeReason:'',nextFollow:'2026-11-07 10:00',lastFollow:null,contactNote:'',hasDrawing:false,reception:1,follows:[],projects:[]},
   {id:'KH-2026-008',name:'钱程',phone:'13800001008',wechat:'wx_qiancheng',city:'青岛',source:'线下',channel:'同行异业',intent:'A',status:'新线索',points:150,owner:'小王',serviceType:'分发',dealers:['青岛海纳家居'],distributeReason:'其他',nextFollow:'2026-11-05 11:00',lastFollow:null,contactNote:'',hasDrawing:false,reception:1,follows:[],projects:[]},
-  {id:'KH-2026-009',name:'冯雪',phone:'13800001009',wechat:'wx_fengxue',city:'苏州',source:'线下',channel:'自然到店/来电',intent:'B',status:'新线索',points:100,owner:'老板',serviceType:'自营',dealers:[],distributeReason:'',nextFollow:'2026-11-08 14:00',lastFollow:'2026-11-02 09:30',contactNote:'已通话',hasDrawing:false,reception:1,follows:[],projects:[]},
+  {id:'KH-2026-009',name:'冯雪',phone:'13800001009',wechat:'wx_fengxue',city:'苏州',source:'线下',channel:'自然到店/来电',intent:'B',status:'已成交',points:100,owner:'老板',serviceType:'自营',dealers:[],distributeReason:'',nextFollow:null,lastFollow:'2026-11-02 09:30',contactNote:'已通话 · 已加微信',hasDrawing:true,drawing:{slot:'户型图',name:'冯雪-户型图.jpg',type:'image/jpeg',url:''},reception:5,follows:[{method:'到店',content:'到店确认平面后签约。',time:'2026-10-20 11:00',author:'老板',next:null}],projects:[]},
   {id:'KH-2026-010',name:'韩磊',phone:'13800001010',wechat:'wx_hanlei',city:'昆明',source:'线上',channel:'抖音直播',intent:'C',status:'新线索',points:50,owner:'小李',serviceType:'分发',dealers:['昆明暖居'],distributeReason:'超出服务半径',nextFollow:'2026-11-06 18:00',lastFollow:null,contactNote:'',hasDrawing:false,reception:1,follows:[],projects:[]}
 ];
 let state = {view:'list',detailId:null,projectId:null,filterTab:'全部',search:'',intentFilter:'',sourceFilter:'',stageFilter:'',sortKey:'nextFollow',sortDir:'asc',followTargetId:null,batchStep:1,listScroll:0,todayFilter:'全部',actionFilter:'全部',showEnded:false,dealerQ:''};

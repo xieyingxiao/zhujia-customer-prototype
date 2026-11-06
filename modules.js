@@ -27,6 +27,22 @@ let CONTRACTS = [
       {at:'2026-10-21 15:00', by:'老板', what:'打开整改', from:'未填', to:'台面接缝重做'},
       {at:'2026-10-19 11:00', by:'项目经理小张', what:'改拆单包', from:'生产中', to:'台面 已到货'},
       {at:'2026-10-15 11:00', by:'老板', what:'客户签字', from:'未签', to:'合同金额 100000.00'}
+    ]},
+  {id:'HT-202611-003', customerId:'KH-2026-009', customerName:'冯雪', phone:'13800001009', designer:'设计小王', address:'苏州', stage:'生产安装', amount:80000, due:0, days:45, ended:false, lost:false, quoteAmount:80000,
+    product:'免漆', civil:'已进场', measureDate:'', needMeasure:'是', promise:'', installDate:'', installDays:'', sitePhone:'',
+    files:[
+      {seq:1, slot:'定金合同', name:'冯雪-定金合同.pdf', type:'application/pdf', url:'', at:'2026-10-20 10:00', by:'销售小李', remark:'', amount:8000},
+      {seq:6, slot:'平面图', name:'冯雪-平面图.pdf', type:'application/pdf', url:'', at:'2026-10-22 15:00', by:'设计小王', remark:'', amount:0}
+    ], factories:[
+      {name:'渝北板材厂', content:'柜体', amount:26000, promise:'2026-11-20', forecast:'2026-11-18', actual:'', status:'待开工', at:'2026-11-01 09:00'},
+      {name:'两江门业', content:'门板', amount:12000, promise:'2026-11-16', forecast:'2026-11-16', actual:'', status:'备货中', at:'2026-11-02 09:00'},
+      {name:'九龙坡五金', content:'五金', amount:4000, promise:'2026-11-18', forecast:'2026-11-12', actual:'', status:'生产中', at:'2026-11-03 09:00'},
+      {name:'巴南石材', content:'台面', amount:9000, promise:'2026-11-06', forecast:'2026-11-02', actual:'', status:'生产中', at:'2026-11-02 09:00'},
+      {name:'渝北板材厂', content:'其他', amount:3000, promise:'2026-11-01', forecast:'2026-11-01', actual:'2026-11-01', status:'已完工', at:'2026-11-01 16:00'},
+      {name:'两江门业', content:'门板', amount:5000, promise:'2026-10-28', forecast:'2026-10-30', actual:'2026-10-30', status:'已到货', at:'2026-10-30 16:00'}
+    ], rectifies:[], changes:[
+      {at:'2026-10-25 11:00', by:'财务小刘', what:'记账', from:'未填', to:'项目收款 80000.00'},
+      {at:'2026-10-20 11:00', by:'老板', what:'客户签字', from:'未签', to:'合同金额 80000.00'}
     ]}
 ];
 let LEDGER = [
@@ -34,7 +50,9 @@ let LEDGER = [
   {kind:'项目收款', dir:'收款', amount:5000, subject:'', cost:false, date:'2026-11-04', due:'', project:'HT-202611-001', customer:'', unpaid:false},
   {kind:'项目收款', dir:'收款', amount:94000, subject:'', cost:false, date:'2026-11-04', due:'', project:'HT-202611-001', customer:'', unpaid:false},
   {kind:'项目付款', dir:'付款', amount:20000, subject:'安装费', cost:true, date:'2026-11-04', due:'', project:'HT-202611-001', customer:'', unpaid:false},
-  {kind:'项目收款', dir:'收款', amount:1000, subject:'', cost:false, date:'2026-11-05', due:'', project:'HT-202611-002', customer:'', unpaid:false}
+  {kind:'项目收款', dir:'收款', amount:1000, subject:'', cost:false, date:'2026-11-05', due:'', project:'HT-202611-002', customer:'', unpaid:false},
+  {kind:'项目收款', dir:'收款', amount:80000, subject:'', cost:false, date:'2026-10-25', due:'', project:'HT-202611-003', customer:'', unpaid:false},
+  {kind:'项目付款', dir:'付款', amount:48000, subject:'材料', cost:true, date:'2026-10-26', due:'', project:'HT-202611-003', customer:'', unpaid:false}
 ];
 let EXPENSES = [
   {category:'其他', amount:600, date:'2026-11-05', due:'2026-11-08', note:'快递未付', unpaid:true},
@@ -1471,6 +1489,8 @@ function hydrateProjects(){
     10:{status:'不适用', reason:'不需要', by:'设计小王', at:'2026-10-18 10:00'},
     27:{status:'不适用', reason:'不需要', by:'销售小李', at:'2026-11-01 10:00'}
   });
+  const feng=CONTRACTS.find(x=>x.id==='HT-202611-003');
+  feng.steps=seedSteps(20,{21:{plan:'2026-11-12'}});
   CONTRACTS.forEach(syncProject);
 }
 hydrateProjects();
