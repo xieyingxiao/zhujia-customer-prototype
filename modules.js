@@ -43,18 +43,18 @@ let RULES = [
   {name:'步骤停滞天数', value:'3', enabled:true}
 ];
 let ACCOUNTS = [
-  {account:'admin', name:'老板', role:'负责人', status:'已开通', modules:'今日待办、销售管理、项目管理、收支记账、经营看板、规则设置', locked:true},
-  {account:'design', name:'设计小王', role:'设计师', status:'已开通', modules:'今日待办、项目管理'},
-  {account:'yanxuan-accept-assist', name:'助理小邓', role:'助理', status:'已开通', modules:'今日待办、销售管理、项目管理'},
-  {account:'yanxuan-accept-design', name:'设计老张', role:'设计师', status:'已开通', modules:'今日待办、销售管理、项目管理、经营看板'},
-  {account:'yanxuan-accept-finance', name:'财务小刘', role:'财务', status:'已开通', modules:'今日待办、销售管理、项目管理、收支记账、经营看板、规则设置'},
-  {account:'yanxuan-accept-install', name:'安装师傅老赵', role:'安装队', status:'已开通', modules:'今日待办、项目管理'},
-  {account:'yanxuan-accept-off', name:'停用账号', role:'销售', status:'未开通', modules:'今日待办、销售管理、项目管理、收支记账、经营看板、规则设置'},
-  {account:'yanxuan-accept-pm', name:'项目经理小张', role:'项目经理', status:'已开通', modules:'今日待办、销售管理、项目管理、收支记账、经营看板'},
-  {account:'yanxuan-accept-sales', name:'销售小李', role:'销售', status:'已开通', modules:'今日待办、销售管理、项目管理、收支记账、经营看板'}
+  {account:'admin', name:'老板', role:'负责人', status:'已开通', modules:'首页看板、销售管理、项目管理、收支记账、规则设置', locked:true},
+  {account:'design', name:'设计小王', role:'设计师', status:'已开通', modules:'首页看板、项目管理'},
+  {account:'yanxuan-accept-assist', name:'助理小邓', role:'助理', status:'已开通', modules:'首页看板、销售管理、项目管理'},
+  {account:'yanxuan-accept-design', name:'设计老张', role:'设计师', status:'已开通', modules:'首页看板、销售管理、项目管理'},
+  {account:'yanxuan-accept-finance', name:'财务小刘', role:'财务', status:'已开通', modules:'首页看板、销售管理、项目管理、收支记账、规则设置'},
+  {account:'yanxuan-accept-install', name:'安装师傅老赵', role:'安装队', status:'已开通', modules:'首页看板、项目管理'},
+  {account:'yanxuan-accept-off', name:'停用账号', role:'销售', status:'未开通', modules:'首页看板、销售管理、项目管理、收支记账、规则设置'},
+  {account:'yanxuan-accept-pm', name:'项目经理小张', role:'项目经理', status:'已开通', modules:'首页看板、销售管理、项目管理、收支记账'},
+  {account:'yanxuan-accept-sales', name:'销售小李', role:'销售', status:'已开通', modules:'首页看板、销售管理、项目管理、收支记账'}
 ];
-const MODULE_OPTIONS = ['今日待办','销售管理','项目管理','收支记账','经营看板','合作伙伴','规则设置'];
-const ROLE_MODULES = {负责人:MODULE_OPTIONS, 设计师:['今日待办','项目管理'], 助理:['今日待办','销售管理','项目管理'], 财务:['今日待办','销售管理','项目管理','收支记账','经营看板','规则设置'], 安装队:['今日待办','项目管理'], 销售:['今日待办','销售管理','项目管理','收支记账','经营看板','合作伙伴'], 项目经理:['今日待办','销售管理','项目管理','收支记账','经营看板']};
+const MODULE_OPTIONS = ['首页看板','销售管理','项目管理','收支记账','合作伙伴','规则设置'];
+const ROLE_MODULES = {负责人:MODULE_OPTIONS, 设计师:['首页看板','项目管理'], 助理:['首页看板','销售管理','项目管理'], 财务:['首页看板','销售管理','项目管理','收支记账','规则设置'], 安装队:['首页看板','项目管理'], 销售:['首页看板','销售管理','项目管理','收支记账','合作伙伴'], 项目经理:['首页看板','销售管理','项目管理','收支记账']};
 
 function money(n){return Number(n||0).toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function ruleValue(name, fallback){const r=RULES.find(x=>x.name===name);if(!r||!r.enabled)return fallback;const n=Number(r.value);return Number.isFinite(n)?n:fallback;}
@@ -99,62 +99,61 @@ function todayItems(){
   LEDGER.filter(x=>x.unpaid&&x.project).forEach(x=>items.push({group:'project', kind:'待付', title:x.project, sub:`${x.kind} · ${money(x.amount)}`, detail:'这一单还有款没付出。', owner:'财务', view:'finance', id:''}));
   return items;
 }
-function workRows(){
-  const rows=[];
-  customers.forEach(c=>{
-    if(c.status==='已流失'||c.boardStage==='流失') return;
-    if(CONTRACTS.some(p=>p.customerId===c.id)) return;
-    rows.push({type:'客户', title:`${c.id} ${c.name}`, stage:c.boardStage, desc:c.city, view:'detail', id:c.id});
-  });
-  CONTRACTS.filter(p=>!p.ended && !p.lost).forEach(p=>{
-    rows.push({type:'项目', title:`${p.id} ${p.customerId} ${p.customerName}`, stage:p.stage, desc:p.address, view:'project', id:p.id});
-  });
-  return rows;
-}
 function openWork(view, id){if(view==='detail')goDetail(id);else if(view==='project')goProject(id);else goView('finance');}
 
-function renderDashboard(){
-  const rows=workRows();
-  const today=todayItems().slice(0,8);
+function renderHome(){
+  const all=todayItems();
+  const people=all.filter(t=>t.group==='customer');
+  const jobs=all.filter(t=>t.group==='project');
   const s=financeSummary();
-  const allToday=todayItems();
-  const peopleN=allToday.filter(t=>t.group==='customer').length;
-  const jobN=allToday.filter(t=>t.group==='project').length;
+  const by=(arr,key)=>Object.entries(arr.reduce((m,x)=>{const k=x[key]||'未定';m[k]=(m[k]||0)+1;return m;},{})).map(([name,n])=>({name,n})).sort((a,b)=>b.n-a.n);
+  const high=ruleValue('毛利率偏高线',55);
+  const low=ruleValue('毛利率偏低线',25);
+  const margins=CONTRACTS.filter(p=>p.amount>0).map(p=>{
+    const cost=projectCost(p.id);
+    const rate=p.amount?(p.amount-cost)/p.amount*100:0;
+    let note='';let cls='';
+    if(rate<low){note='毛利率偏低';cls='margin-bad';}
+    else if(rate>high){note='成本可能没录全';cls='margin-warn';}
+    return {p, cost, rate, note, cls};
+  });
+  const blocked=CONTRACTS.filter(p=>p.action&&String(p.action.blocker||'').indexOf('还要上传')===0).length;
   pageShell(`
     <div class="page-head">
-      <div><h1>工作台</h1><p>统计截止 ${TODAY}。今天有 ${allToday.length} 件事要处理，左边看在办，右边看今天。</p></div>
-      <button class="btn btn-primary" onclick="goView('today')">打开今日待办</button>
+      <div><h1>首页看板</h1><p>统计截止 ${TODAY}。左边是还没签约的客户，右边是已经立项的项目。点「去处理」进入这个客户或这个项目。没有挂在项目上的日常开支，到收支记账里看。</p></div>
+      <button class="btn btn-default" onclick="render()">刷新</button>
     </div>
     <div class="kpis">
       <button type="button" class="kpi" onclick="goView('project')"><div class="lab">在途项目</div><div class="val">${s.inFlight}</div><div class="sub">还没到售后</div></button>
-      <button type="button" class="kpi" onclick="goView('today')"><div class="lab">今日待办</div><div class="val">${allToday.length}</div><div class="sub">客户 ${peopleN} · 项目 ${jobN}</div></button>
-      <button type="button" class="kpi" onclick="goView('finance')"><div class="lab">本月净额</div><div class="val">${money(s.net)}</div><div class="sub">收入 ${money(s.income)}</div></button>
-      <button type="button" class="kpi" onclick="goView('board')"><div class="lab">待收</div><div class="val">${money(s.due)}</div><div class="sub">${s.dueCount} 个项目还没收齐</div></button>
+      <button type="button" class="kpi" onclick="document.getElementById('homeToday').scrollIntoView({behavior:'smooth',block:'start'})"><div class="lab">待处理</div><div class="val">${all.length}</div><div class="sub">客户 ${people.length} · 项目 ${jobs.length}</div></button>
+      <button type="button" class="kpi" onclick="goView('finance')"><div class="lab">本月净额</div><div class="val">${money(s.net)}</div><div class="sub">收入 ${money(s.income)} · 支出 ${money(s.pay)}</div></button>
+      <button type="button" class="kpi" onclick="goView('finance')"><div class="lab">待收</div><div class="val">${money(s.due)}</div><div class="sub">${s.dueCount} 个项目还没收齐</div></button>
     </div>
-    <div class="grid-3">
-      <button type="button" class="kpi" onclick="goView('today')"><div class="lab">逾期跟进</div><div class="val">${allToday.filter(t=>t.kind==='逾期跟进').length}</div><div class="sub">未签约客户里已过下次跟进</div></button>
-      <button type="button" class="kpi" onclick="goView('actions')"><div class="lab">当前卡点</div><div class="val">${CONTRACTS.filter(p=>p.action&&String(p.action.blocker||'').indexOf('还要上传')===0).length}</div><div class="sub">当前步骤还缺文件</div></button>
-      <button type="button" class="kpi" onclick="goView('production')"><div class="lab">生产安装</div><div class="val">${CONTRACTS.filter(p=>p.action&&p.action.group==='生产安装').length}</div><div class="sub">当前停在生产安装的项目</div></button>
+    <div class="kpis">
+      <button type="button" class="kpi" onclick="goView('finance')"><div class="lab">累计已收款</div><div class="val">${money(s.received)}</div><div class="sub">${s.receivedCount} 条</div></button>
+      <button type="button" class="kpi" onclick="goView('finance')"><div class="lab">本月收入</div><div class="val">${money(s.income)}</div><div class="sub">${s.incomeCount} 条</div></button>
+      <button type="button" class="kpi" onclick="goView('project')"><div class="lab">全款未收齐</div><div class="val">${s.unpaidCount}</div><div class="sub">已有合同金额还没收完</div></button>
+      <button type="button" class="kpi" onclick="goView('actions')"><div class="lab">当前卡点</div><div class="val">${blocked}</div><div class="sub">当前步骤还缺文件 · 待发提成 ${money(s.commission)}</div></button>
     </div>
+    <div id="homeToday" class="block-title">今天要处理 ${all.length} 条</div>
     <div class="today-split">
-      <section class="today-pane">
-        <div class="block-title" style="margin-top:0">在办 <span style="font-weight:400;color:var(--text-muted);font-size:12px">没有项目的客户一行，每个项目一行</span></div>
-        <div class="table-wrap"><table class="data"><thead><tr><th>类型</th><th>客户或项目</th><th>阶段</th><th>说明</th><th class="col-ops">操作</th></tr></thead><tbody>
-          ${rows.map(r=>`<tr><td>${esc(r.type)}</td><td><strong>${esc(r.title)}</strong></td><td>${stageBadge(r.stage)}</td><td>${esc(r.desc)}</td><td><button class="btn btn-sm btn-default" onclick="openWork('${r.view}','${r.id}')">打开</button></td></tr>`).join('')||'<tr><td colspan="5">还没有在办的客户或项目</td></tr>'}
-        </tbody></table></div>
-      </section>
-      <section class="today-pane">
-        <div class="block-title" style="margin-top:0">今天 <button class="btn btn-text btn-sm" onclick="goView('today')">全部</button></div>
-        <div class="table-wrap"><table class="data"><thead><tr><th>事项</th><th>客户或项目</th><th class="col-ops">操作</th></tr></thead><tbody>
-          ${today.map(t=>`<tr><td>${esc(t.kind)}</td><td>${esc(t.title)} <span style="color:var(--text-muted)">${esc(t.sub)}</span></td><td><button class="btn btn-sm btn-primary" onclick="openWork('${t.view}','${t.id}')">去处理</button></td></tr>`).join('')||'<tr><td colspan="3">今天没有要处理的事</td></tr>'}
-        </tbody></table></div>
-      </section>
+      <section class="today-pane"><div class="block-title">未签约客户 ${people.length} 条</div>${todayTable(people,'客户')}</section>
+      <section class="today-pane"><div class="block-title">已签约项目 ${jobs.length} 条</div>${todayTable(jobs,'项目')}</section>
     </div>
+    <div class="grid-2" style="margin-top:16px">
+      ${shareRows('渠道占比', by(customers,'channel'))}
+      ${shareRows('分级分布', by(customers.map(c=>({grade:c.intent?c.intent+'级':'未分级'})),'grade'))}
+    </div>
+    <div class="grid-2" style="margin-top:12px">
+      ${shareRows('跟进状态', by(customers,'status'))}
+      ${shareRows('阶段分布', by(CONTRACTS,'stage'))}
+    </div>
+    <div class="block-title">项目毛利</div>
+    <p class="page-note">毛利率 =（订单总额 − 成本）÷ 订单总额。低于 ${low}% 标红，高于 ${high}% 写成本可能没录全。</p>
+    <div class="table-wrap"><table class="data"><thead><tr><th>项目</th><th>阶段</th><th>订单总额</th><th>成本</th><th>毛利率</th><th>说明</th></tr></thead><tbody>
+      ${margins.map(m=>`<tr onclick="goProject('${m.p.id}')"><td>${esc(m.p.id)}</td><td>${esc(m.p.stage)}</td><td>${money(m.p.amount)}</td><td>${money(m.cost)}</td><td class="${m.cls}">${m.rate.toFixed(2)}%</td><td>${esc(m.note||'—')}</td></tr>`).join('')||'<tr><td colspan="6">还没有可算毛利率的项目</td></tr>'}
+    </tbody></table></div>
   `);
-}
-function kpiHtml(s){
-  const cards=[['在途项目数',s.inFlight,''],['全款未收齐',s.unpaidCount,''],['累计已收款',money(s.received),s.receivedCount+' 条'],['待收金额',money(s.due),s.dueCount+' 条'],['本月收入',money(s.income),s.incomeCount+' 条'],['本月支出',money(s.pay),s.payCount+' 条'],['本月净额',money(s.net),s.entryCount+' 条'],['待发提成',money(s.commission),s.commissionCount+' 条']];
-  return `<div class="kpi-grid">${cards.map(c=>`<div class="kpi"><div class="n">${c[1]}</div><div class="l">${c[0]}</div>${c[2]?`<div class="s">${c[2]}</div>`:''}</div>`).join('')}</div>`;
 }
 function financeSummary(){
   const month=TODAY.slice(0,7);
@@ -188,22 +187,7 @@ function todayTable(list, who){
     ${rows||`<tr><td colspan="5">这块今天没有要处理的</td></tr>`}
   </tbody></table></div><div class="pager"><span class="info">共 ${list.length} 条</span></div>`;
 }
-function renderToday(){
-  const all=todayItems();
-  const people=all.filter(t=>t.group==='customer');
-  const jobs=all.filter(t=>t.group==='project');
-  pageShell(`
-    <div class="page-head">
-      <div><h1>今日待办</h1><p>左边是还没签约的客户，右边是已经立项的项目。点「去处理」进入这个客户或这个项目。没有挂在项目上的日常开支，到收支记账里看。</p></div>
-      <button class="btn btn-default" onclick="render()">刷新</button>
-    </div>
-    <div class="block-title" style="margin-top:0">共 ${all.length} 条</div>
-    <div class="today-split">
-      <section class="today-pane"><div class="block-title">未签约客户 ${people.length} 条</div>${todayTable(people,'客户')}</section>
-      <section class="today-pane"><div class="block-title">已签约项目 ${jobs.length} 条</div>${todayTable(jobs,'项目')}</section>
-    </div>
-  `);
-}
+
 
 const STEP_DEFS = [
   {seq:1, group:'节点判断', name:'收取定金', role:'负责人或销售', slots:['定金合同'], na:false, money:true},
@@ -543,7 +527,7 @@ function renderProjectDetail(){
       ${stats.map(g=>`<button type="button" class="group-chip ${state.stepGroup===g.name?'on':''}" onclick="state.stepGroup='${g.name}';render()">${g.name} <b>${g.done}/${g.total}</b></button>`).join('')}
     </div>
     <p class="page-note">${esc(p.progress)}</p>
-    <p class="page-note">步骤按顺序往下走。只有当前这一步能上传、完成或标不适用。没有上传按钮就不用文件。有上传按钮时，缺的文件传齐才能点完成。计划日可以改，预埋改的是到场日。日期过了还没做完，会写超了几天，并出现在今日待办。客户确认平面、客户确认立面要填确认方式；最终报价要填金额；安排安装要填日期、天数和现场电话。</p>
+    <p class="page-note">步骤按顺序往下走。只有当前这一步能上传、完成或标不适用。没有上传按钮就不用文件。有上传按钮时，缺的文件传齐才能点完成。计划日可以改，预埋改的是到场日。日期过了还没做完，会写超了几天，并出现在首页看板。客户确认平面、客户确认立面要填确认方式；最终报价要填金额；安排安装要填日期、天数和现场电话。</p>
     <div class="table-wrap"><table class="data"><thead><tr><th>步骤</th><th>分组</th><th>岗位</th><th>状态</th><th>计划</th><th>说明</th><th class="col-ops">操作</th></tr></thead><tbody>
       ${rows.map(s=>{
         const def=stepDef(s.seq);
@@ -782,7 +766,7 @@ function openPlan(id){
   if(!p||!step||p.lost||def.auto) return;
   const label=def.planLabel||'计划日';
   openModule('修改'+label+' '+def.name, `
-    <p class="page-note">留空就是清掉这一天。日期已过且这一步还没完成，会进今日待办。</p>
+    <p class="page-note">留空就是清掉这一天。日期已过且这一步还没完成，会进首页看板。</p>
     <div class="form-group"><label>${label}</label><input class="input" type="date" id="planDate" value="${step.plan||''}" /></div>
   `, ()=>{
     const v=document.getElementById('planDate').value;
@@ -1180,41 +1164,8 @@ function openCommission(){
 
 function shareRows(title, rows){
   const total=rows.reduce((s,r)=>s+r.n,0)||1;
-  const bars=rows.map(r=>`<div class="bar-row"><div class="bar-lab" title="${esc(r.name)}">${esc(r.name)}</div><div class="bar-track"><i style="width:${(r.n/total*100).toFixed(1)}%"></i></div><div class="bar-val">${(r.n/total*100).toFixed(0)}%</div></div>`).join('');
-  return `<div class="block-title">${title}</div><div class="panel" style="padding:6px 16px 10px;margin-bottom:10px">${bars||'<div class="empty-inline">暂无</div>'}</div><div class="table-wrap"><table class="data"><thead><tr><th>${title.includes('阶段')?'阶段':title.replace('占比','').replace('分布','')}</th><th>数量</th><th>占比</th></tr></thead><tbody>
-    ${rows.map(r=>`<tr><td>${esc(r.name)}</td><td>${r.n}</td><td>${(r.n/total*100).toFixed(1)}%</td></tr>`).join('')||'<tr><td colspan="3">暂无</td></tr>'}
-  </tbody></table></div>`;
-}
-function renderBoard(){
-  const s=financeSummary();
-  const by=(arr,key)=>Object.entries(arr.reduce((m,x)=>{const k=x[key]||'未定';m[k]=(m[k]||0)+1;return m;},{})).map(([name,n])=>({name,n})).sort((a,b)=>b.n-a.n);
-  const high=ruleValue('毛利率偏高线',55);
-  const low=ruleValue('毛利率偏低线',25);
-  const margins=CONTRACTS.filter(p=>p.amount>0).map(p=>{
-    const cost=projectCost(p.id);
-    const rate=p.amount?(p.amount-cost)/p.amount*100:0;
-    let note='';let cls='';
-    if(rate<low){note='毛利率偏低';cls='margin-bad';}
-    else if(rate>high){note='成本可能没录全';cls='margin-warn';}
-    return {p, cost, rate, note, cls};
-  });
-  const overdue=todayItems().filter(t=>t.kind==='逾期跟进'||t.kind==='项目事项');
-  pageShell(`
-    <div class="page-head"><div><h1>经营看板</h1><p>统计截止 ${TODAY}。本月收入 ${money(s.income)}。渠道、分级和毛利率都从现有客户和项目算。</p></div></div>
-    ${kpiHtml(s)}
-    <div class="block-title">今日必看</div>
-    ${overdue.length?`<div class="table-wrap"><table class="data"><thead><tr><th>类别</th><th>事项</th><th>客户或项目</th><th>说明</th><th>操作</th></tr></thead><tbody>${overdue.map(t=>`<tr><td>${esc(t.kind)}</td><td>${esc(t.title)}</td><td>${esc(t.sub)}</td><td>${esc(t.detail)}</td><td><button class="btn btn-sm btn-primary" onclick="openWork('${t.view}','${t.id}')">去处理</button></td></tr>`).join('')}</tbody></table></div>`:'<div class="empty-inline">今天没有逾期跟进、逾期项目或 3 天内待收</div>'}
-    ${shareRows('渠道占比', by(customers,'channel'))}
-    ${shareRows('分级分布', by(customers.map(c=>({grade:c.intent?c.intent+'级':'未分级'})),'grade'))}
-    ${shareRows('跟进状态', by(customers,'status'))}
-    ${shareRows('阶段分布', by(CONTRACTS,'stage'))}
-    <div class="block-title">逾期项目</div>
-    <div class="empty-inline">没有逾期项目</div>
-    <p class="page-note">毛利率 =（订单总额 − 成本）÷ 订单总额。低于 ${low}% 标红，高于 ${high}% 写成本可能没录全。</p>
-    <div class="table-wrap"><table class="data"><thead><tr><th>项目</th><th>阶段</th><th>订单总额</th><th>成本</th><th>毛利率</th><th>说明</th></tr></thead><tbody>
-      ${margins.map(m=>`<tr><td>${esc(m.p.id)}</td><td>${esc(m.p.stage)}</td><td>${money(m.p.amount)}</td><td>${money(m.cost)}</td><td class="${m.cls}">${m.rate.toFixed(2)}%</td><td>${esc(m.note||'—')}</td></tr>`).join('')||'<tr><td colspan="6">还没有可算毛利率的项目</td></tr>'}
-    </tbody></table></div>
-  `);
+  const bars=rows.map(r=>`<div class="bar-row"><div class="bar-lab" title="${esc(r.name)}">${esc(r.name)}</div><div class="bar-track"><i style="width:${(r.n/total*100).toFixed(1)}%"></i></div><div class="bar-val">${r.n}</div></div>`).join('');
+  return `<div class="panel"><div class="panel-hd"><h3>${esc(title)}</h3><span class="meta">共 ${rows.reduce((s,r)=>s+r.n,0)}</span></div><div style="padding:4px 16px 12px">${bars||'<div class="empty-inline">暂无</div>'}</div></div>`;
 }
 
 function renderRules(){

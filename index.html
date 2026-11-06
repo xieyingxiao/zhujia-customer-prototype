@@ -500,13 +500,11 @@ tr.step-locked td{color:var(--text-muted)}
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-brand"><div class="logo">住</div><span>住家研选<span class="brand-sub">销售与交付</span></span></div>
     <nav class="sidebar-nav">
-      <a class="nav-item" data-view="dashboard" href="#/dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10.5L12 3l9 7.5V21a1 1 0 01-1 1h-5v-7H9v7H4a1 1 0 01-1-1z"/></svg>工作台</a>
       <div class="nav-group-title">住家研选</div>
-      <a class="nav-item" data-view="today" href="#/today"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18M8 2v4M16 2v4"/></svg>今日待办</a>
+      <a class="nav-item" data-view="home" href="#/home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10.5L12 3l9 7.5V21a1 1 0 01-1 1h-5v-7H9v7H4a1 1 0 01-1-1z"/></svg>首页看板</a>
       <a class="nav-item" data-view="list" href="#/list"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>销售管理</a>
       <a class="nav-item" data-view="project" href="#/project"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>项目管理</a>
       <a class="nav-item" data-view="finance" href="#/finance"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>收支记账</a>
-      <a class="nav-item" data-view="board" href="#/board"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>经营看板</a>
       <a class="nav-item" data-view="dealers" href="#/dealers"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l2-5h14l2 5M3 9h18v11a1 1 0 01-1 1H4a1 1 0 01-1-1z"/><path d="M9 21v-6h6v6M3 9a3 3 0 006 0 3 3 0 006 0 3 3 0 006 0"/></svg>合作伙伴</a>
       <a class="nav-item" data-view="rules" href="#/rules"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>规则设置</a>
     </nav>
@@ -521,7 +519,7 @@ tr.step-locked td{color:var(--text-muted)}
       </div>
     </header>
     <div class="tabs-bar" id="tabsBar">
-      <div class="tab" onclick="toast('原型仅演示销售管理')">工作台</div>
+      <div class="tab" onclick="goView('home')">首页看板</div>
       <div class="tab active" id="tabList" onclick="goList()">销售管理 <span class="x" onclick="event.stopPropagation()"><svg class="ico-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg></span></div>
     </div>
     <div class="content" id="content"></div>
@@ -723,6 +721,7 @@ tr.step-locked td{color:var(--text-muted)}
     <li>项目合同改名为项目管理。待办动作收进项目管理，和合同并排切换</li>
     <li>项目管理里的子模块改叫项目，打开后是项目详情。详情按 27 个步骤往下走，当前这一步才能上传、完成或标不适用</li>
     <li>整站改用暖灰底和青绿色。工作台、列表、项目详情按本地小匠原型的页头、数字卡和进度条重排。生产协同按拆单包看齐套，一个项目可以有多包。业务步骤仍走原来的闭环</li>
+    <li>今日待办和经营看板合成首页看板，工作台去掉。待处理的客户和项目、经营数字、渠道分级和毛利率都在这一页</li>
     <li>记跟进可写方式/内容/下次时间，真追加</li>
     <li>建档打开不报错；失焦/提交才校验；重复提示</li>
     <li>批量建档三步：模板→上传→结果</li>
@@ -869,8 +868,8 @@ function filtered(){
   });
   return list;
 }
-const VIEW_HASH={dashboard:'#/dashboard',today:'#/today',actions:'#/actions',production:'#/production',list:'#/list',project:'#/project',finance:'#/finance',board:'#/board',dealers:'#/dealers',rules:'#/rules'};
-const VIEW_NAME={dashboard:'工作台',today:'今日待办',actions:'待办动作',production:'生产协同',list:'销售管理',project:'项目管理',finance:'收支记账',board:'经营看板',dealers:'合作伙伴',rules:'规则设置'};
+const VIEW_HASH={home:'#/home',actions:'#/actions',production:'#/production',list:'#/list',project:'#/project',finance:'#/finance',dealers:'#/dealers',rules:'#/rules'};
+const VIEW_NAME={home:'首页看板',actions:'待办动作',production:'生产协同',list:'销售管理',project:'项目管理',finance:'收支记账',dealers:'合作伙伴',rules:'规则设置'};
 function goList(){location.hash='#/list';if(location.hash==='#/list'){applyHash();render();}if(state.listScroll)requestAnimationFrame(()=>{const el=document.getElementById('content');if(el)el.scrollTop=state.listScroll});}
 function goDetail(id){if(document.getElementById('content'))state.listScroll=document.getElementById('content').scrollTop;location.hash='#/detail/'+id;}
 function goProject(id){location.hash='#/project/'+id;}
@@ -879,6 +878,7 @@ function applyHash(){
   const h=location.hash||'#/list';
   document.getElementById('mobileSticky').classList.remove('show');
   closeSidebar();
+  if(h==='#/dashboard'||h==='#/today'||h==='#/board'){state.view='home';state.detailId=null;if(location.hash!=='#/home')location.hash='#/home';return;}
   if(h.startsWith('#/detail/')){state.view='detail';state.detailId=decodeURIComponent(h.slice('#/detail/'.length));return;}
   if(h.startsWith('#/project/')){state.view='projectDetail';state.projectId=decodeURIComponent(h.slice('#/project/'.length));return;}
   const found=Object.keys(VIEW_HASH).find(k=>VIEW_HASH[k]===h);
@@ -888,7 +888,7 @@ function applyHash(){
 window.addEventListener('hashchange',()=>{applyHash();render();});
 
 function render(){
-  const map={detail:renderDetail,list:renderList,dashboard:renderDashboard,today:renderToday,actions:renderActions,production:renderProduction,project:renderProjects,projectDetail:renderProjectDetail,finance:renderFinance,board:renderBoard,dealers:renderDealers,rules:renderRules};
+  const map={detail:renderDetail,list:renderList,home:renderHome,actions:renderActions,production:renderProduction,project:renderProjects,projectDetail:renderProjectDetail,finance:renderFinance,dealers:renderDealers,rules:renderRules};
   (map[state.view]||renderList)();
   updateChrome();
 }
@@ -900,10 +900,10 @@ function updateChrome(){
   if(state.view==='detail'||state.view==='projectDetail'||state.view==='actions'||state.view==='production'){
     const closeTo=(state.view==='actions'||state.view==='production')?'project':parent;
     bc.innerHTML=`<span>住家研选</span><span class="sep">/</span><a href="${VIEW_HASH[parent]}" onclick="goView('${parent}');return false">${parentName}</a><span class="sep">/</span><span class="cur">${cur}</span>`;
-    tabs.innerHTML=`<div class="tab" onclick="goView('dashboard')">工作台</div><div class="tab" onclick="goView('${parent}')">${parentName}</div><div class="tab active">${cur} <span class="x" onclick="event.stopPropagation();goView('${closeTo}')">${iconClose()}</span></div>`;
+    tabs.innerHTML=`<div class="tab" onclick="goView('home')">首页看板</div><div class="tab" onclick="goView('${parent}')">${parentName}</div><div class="tab active">${cur} <span class="x" onclick="event.stopPropagation();goView('${closeTo}')">${iconClose()}</span></div>`;
   } else {
     bc.innerHTML=`<span>住家研选</span><span class="sep">/</span><span class="cur">${cur}</span>`;
-    tabs.innerHTML=`<div class="tab ${state.view==='dashboard'?'active':''}" onclick="goView('dashboard')">工作台</div>${state.view==='dashboard'?'':`<div class="tab active">${cur}</div>`}`;
+    tabs.innerHTML=`<div class="tab ${state.view==='home'?'active':''}" onclick="goView('home')">首页看板</div>${state.view==='home'?'':`<div class="tab active">${cur}</div>`}`;
   }
   document.querySelectorAll('.nav-item').forEach(a=>{
     const v=a.dataset.view;
