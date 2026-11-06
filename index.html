@@ -449,6 +449,7 @@ textarea.input{height:auto;min-height:88px;padding:10px 12px;resize:vertical;lin
 .prog{height:6px;background:var(--border);border-radius:3px;overflow:hidden;min-width:80px}
 .prog>i{display:block;height:100%;background:var(--primary);border-radius:3px}
 .prog>i.ok{background:var(--success)}
+.prog>i.warn{background:var(--warning)}
 .prog>i.risk{background:var(--danger)}
 .tl{display:flex;gap:0;overflow-x:auto;padding:4px 2px 12px;margin:0 0 16px}
 .tl-step{flex:1;min-width:72px;position:relative;padding-top:18px}
@@ -721,7 +722,7 @@ tr.step-locked td{color:var(--text-muted)}
     <li>今日待办左右分成未签约客户和已签约项目</li>
     <li>项目合同改名为项目管理。待办动作收进项目管理，和合同并排切换</li>
     <li>项目管理里的子模块改叫项目，打开后是项目详情。详情按 27 个步骤往下走，当前这一步才能上传、完成或标不适用</li>
-    <li>整站改用暖灰底和青绿色。工作台、列表、项目详情按本地小匠原型的页头、数字卡和进度条重排。项目管理里加了生产协同，只读现有步骤和工厂记录。业务步骤仍走原来的闭环</li>
+    <li>整站改用暖灰底和青绿色。工作台、列表、项目详情按本地小匠原型的页头、数字卡和进度条重排。生产协同按拆单包看齐套，一个项目可以有多包。业务步骤仍走原来的闭环</li>
     <li>记跟进可写方式/内容/下次时间，真追加</li>
     <li>建档打开不报错；失焦/提交才校验；重复提示</li>
     <li>批量建档三步：模板→上传→结果</li>

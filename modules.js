@@ -10,7 +10,12 @@ let CONTRACTS = [
     changes:[{at:'2026-11-05 09:27', by:'老板', what:'记账', from:'未填', to:'项目收款 1000.00'}]},
   {id:'HT-202611-001', customerId:'KH-2026-005', customerName:'吴婷', phone:'13800001005', designer:'设计小王', address:'重庆', stage:'售后', amount:100000, due:0, days:45, ended:false, lost:false, quoteAmount:100000,
     product:'免漆', civil:'已进场', measureDate:'', needMeasure:'是', promise:'', installDate:'2026-10-28', installDays:'3', sitePhone:'13800001005',
-    files:[], factories:[], rectifies:[], changes:[]}
+    files:[], factories:[
+      {name:'渝北板材厂', content:'柜体', amount:42000, promise:'2026-10-12', forecast:'2026-10-12', actual:'2026-10-12', status:'已完工', at:'2026-10-12 11:00'},
+      {name:'两江门业', content:'门板', amount:18600, promise:'2026-10-14', forecast:'2026-10-14', actual:'2026-10-14', status:'已完工', at:'2026-10-14 11:00'},
+      {name:'巴南石材', content:'台面', amount:15200, promise:'2026-10-16', forecast:'2026-10-19', actual:'2026-10-19', status:'已到货', at:'2026-10-19 11:00'},
+      {name:'九龙坡五金', content:'五金', amount:6800, promise:'2026-10-10', forecast:'2026-10-10', actual:'2026-10-10', status:'已到货', at:'2026-10-10 11:00'}
+    ], rectifies:[], changes:[]}
 ];
 let LEDGER = [
   {kind:'项目收款', dir:'收款', amount:1000, subject:'', cost:false, date:'2026-11-04', due:'', project:'HT-202611-001', customer:'', unpaid:false},
@@ -349,42 +354,72 @@ function renderActions(){
     <div class="pager"><span class="info">共 ${list.length} 条</span></div>
   `);
 }
-function groupPct(p, name){
-  const g=groupStats(p).find(x=>x.name===name);
-  if(!g||!g.total) return 100;
-  return Math.round(g.done/g.total*100);
+const PKG_PROGRESS={待开工:0,备货中:40,生产中:70,已完工:100,已到货:100};
+function pkgProgress(f){return PKG_PROGRESS[f.status]??0;}
+function pkgReady(f){return pkgProgress(f)>=100;}
+function pkgLate(f){
+  if(pkgReady(f)) return false;
+  if(f.forecast&&f.forecast<TODAY) return true;
+  return !!(f.promise&&f.forecast&&f.forecast>f.promise);
+}
+function pkgShownStatus(f){return !pkgReady(f)&&f.forecast&&f.forecast<TODAY?'延期':(f.status||'待开工');}
+function pkgBadge(f){
+  const s=pkgShownStatus(f);
+  const cls=s==='延期'?'badge-stage-wait':(pkgReady(f)?'badge-stage-done':(s==='生产中'||s==='备货中'?'badge-stage':'badge-intent-none'));
+  return `<span class="badge ${cls}">${esc(s)}</span>`;
+}
+function pkgReadiness(p){
+  const list=p.factories||[];
+  if(!list.length) return null;
+  return Math.round(list.filter(pkgReady).length/list.length*100);
+}
+function pkgSlowest(p){
+  const list=(p.factories||[]).filter(f=>f.forecast);
+  if(!list.length) return null;
+  return list.reduce((a,f)=>f.forecast>a.forecast?f:a);
 }
 function renderProduction(){
   const open=CONTRACTS.filter(p=>!p.lost);
-  const factories=[];
-  open.forEach(p=>(p.factories||[]).forEach(f=>factories.push(Object.assign({project:p}, f))));
+  const packs=[];
+  open.forEach(p=>(p.factories||[]).forEach((f,i)=>packs.push(Object.assign({project:p, index:i}, f))));
   const by={};
-  factories.forEach(f=>{(by[f.name]=by[f.name]||[]).push(f);});
+  packs.forEach(f=>{(by[f.name]=by[f.name]||[]).push(f);});
   const names=Object.keys(by);
-  const making=open.filter(p=>p.action&&p.action.group==='生产安装');
+  const lateN=packs.filter(pkgLate).length;
+  const openPack=packs.filter(f=>!pkgReady(f)).length;
+  const filters=['全部','未齐套','还没拆包'];
+  if(!filters.includes(state.prodFilter)) state.prodFilter='全部';
+  let rows=open;
+  if(state.prodFilter==='未齐套') rows=open.filter(p=>(p.factories||[]).length&&pkgReadiness(p)<100);
+  if(state.prodFilter==='还没拆包') rows=open.filter(p=>!(p.factories||[]).length);
   pageShell(`
-    <div class="page-head"><div><h1>生产协同</h1><p>看哪个项目停在生产安装，工厂记录记在项目上。这里不另开一套订单。</p></div></div>
+    <div class="page-head"><div><h1>生产协同</h1><p>一个项目可以拆成多包。齐套率是已完工或已到货的包数除以包数。总交期看最慢那个包的预测日，不取平均。</p></div></div>
     ${projectSubnav('production')}
     <div class="kpis">
-      <div class="kpi" style="cursor:default"><div class="lab">在办项目</div><div class="val">${open.filter(p=>!p.ended&&p.stage!=='售后').length}</div><div class="sub">还没到售后</div></div>
-      <div class="kpi" style="cursor:default"><div class="lab">生产安装</div><div class="val">${making.length}</div><div class="sub">当前步骤在这一组</div></div>
-      <div class="kpi" style="cursor:default"><div class="lab">工厂记录</div><div class="val">${factories.length}</div><div class="sub">${names.length} 家</div></div>
-      <div class="kpi" style="cursor:default"><div class="lab">已到售后</div><div class="val">${open.filter(p=>p.stage==='售后').length}</div><div class="sub">步骤已走完</div></div>
+      <div class="kpi" style="cursor:default"><div class="lab">拆单包</div><div class="val">${packs.length}</div><div class="sub">${names.length} 家工厂</div></div>
+      <div class="kpi" style="cursor:default"><div class="lab">还没齐</div><div class="val">${openPack}</div><div class="sub">未完工也未到货</div></div>
+      <div class="kpi" style="cursor:default"><div class="lab">延期包</div><div class="val">${lateN}</div><div class="sub">预测已过，或晚于承诺</div></div>
+      <div class="kpi" style="cursor:default"><div class="lab">已齐套项目</div><div class="val">${open.filter(p=>pkgReadiness(p)===100).length}</div><div class="sub">包都完工或到货</div></div>
     </div>
     ${names.length?`<div class="factory-grid">${names.map(name=>{
       const list=by[name];
-      return `<div class="factory-card"><div class="fh"><b>${esc(name)}</b><span class="badge badge-stage">${list.length} 条</span></div>
-        ${list.map(f=>`<div class="pkg-mini"><div style="display:flex;justify-content:space-between;gap:8px"><span><b>${esc(f.project.id)}</b> ${esc(f.content||'')}</span><span class="phone">${money(f.amount)}</span></div><div style="color:var(--text-muted);margin-top:2px">${esc(f.project.customerName)} · ${esc(f.at||'')}</div></div>`).join('')}
+      const late=list.filter(pkgLate).length;
+      return `<div class="factory-card"><div class="fh"><b>${esc(name)}</b>${late?`<span class="badge badge-stage-wait">${late} 延期</span>`:`<span class="badge badge-stage-done">正常</span>`}</div>
+        <div style="color:var(--text-muted);font-size:12px">在制 ${list.length} 包</div>
+        ${list.map(f=>`<div class="pkg-mini" style="cursor:pointer" onclick="goProject('${f.project.id}')"><div style="display:flex;justify-content:space-between;gap:8px"><span><b>${esc(f.project.id)}</b> ${esc(f.content||'')}</span><span>${pkgBadge(f)}</span></div><div class="prog" style="margin-top:6px"><i class="${pkgReady(f)?'ok':pkgLate(f)?'risk':''}" style="width:${pkgProgress(f)}%"></i></div><div style="color:var(--text-muted);margin-top:4px">${esc(f.project.customerName)} · 预测 ${esc(f.forecast||'未填')}</div></div>`).join('')}
       </div>`;
-    }).join('')}</div>`:`<div class="callout">还没有工厂记录。打开项目详情，点「添加工厂」。金额用来对账，不计入项目成本。</div>`}
-    <div class="panel"><div class="panel-hd"><h3>生产安装进度</h3><span class="meta">按项目 · 点行打开</span></div>
-      <div class="table-wrap"><table class="data"><thead><tr><th>项目</th><th>客户</th><th>当前步骤</th><th>生产安装</th><th>工厂</th></tr></thead><tbody>
-        ${open.map(p=>{
-          const pct=groupPct(p,'生产安装');
-          const cur=currentStep(p);
-          const cls=pct>=100?'ok':(p.action&&p.action.group==='生产安装'?'':'');
-          return `<tr onclick="goProject('${p.id}')"><td>${esc(p.id)}</td><td>${esc(p.customerName)}</td><td>${cur?esc(stepDef(cur.seq).name):'已走完'}</td><td style="min-width:140px"><div class="prog"><i class="${cls}" style="width:${pct}%"></i></div></td><td>${(p.factories||[]).length}</td></tr>`;
-        }).join('')||'<tr><td colspan="5">没有项目</td></tr>'}
+    }).join('')}</div>`:`<div class="callout">还没有拆单包。打开项目详情，点「添加拆单包」。一个项目可以记多条，金额用来对账，不计入项目成本。</div>`}
+    <div class="panel"><div class="panel-hd"><h3>齐套看板</h3><span class="meta">按项目 · 点行打开</span></div>
+      <div style="padding:12px 16px 0"><div class="filter-tabs">${filters.map(k=>`<button class="filter-tab ${state.prodFilter===k?'active':''}" onclick="state.prodFilter='${k}';render()">${k}</button>`).join('')}</div></div>
+      <div class="table-wrap" style="border:none;border-radius:0"><table class="data"><thead><tr><th>项目</th><th>客户</th><th>包数</th><th>齐套率</th><th>缺哪个</th><th>最慢的包</th><th>预测日</th></tr></thead><tbody>
+        ${rows.map(p=>{
+          const list=p.factories||[];
+          const rate=pkgReadiness(p);
+          const miss=list.filter(f=>!pkgReady(f)).map(f=>f.content).join('、');
+          const slow=pkgSlowest(p);
+          const bar=rate==null?'—':`<div style="display:flex;align-items:center;gap:8px"><div class="prog" style="flex:1"><i class="${rate>=100?'ok':rate<60?'risk':'warn'}" style="width:${rate}%"></i></div><span class="phone">${rate}%</span></div>`;
+          return `<tr onclick="goProject('${p.id}')"><td>${esc(p.id)}</td><td>${esc(p.customerName)}</td><td>${list.length}</td><td style="min-width:120px">${bar}</td><td>${list.length?(miss||'—'):'还没拆包'}</td><td>${slow?esc(slow.content+' · '+slow.name):'—'}</td><td>${slow?esc(slow.forecast):'—'}</td></tr>`;
+        }).join('')||'<tr><td colspan="7">这个筛选下没有项目</td></tr>'}
       </tbody></table></div>
     </div>
   `);
@@ -476,7 +511,7 @@ function renderProjectDetail(){
       <button class="btn btn-default" onclick="openSite('${p.id}')">修改现场</button>
       <button class="btn btn-default" onclick="openReconfirm('${p.id}')">重新确认</button>
       <button class="btn btn-default" onclick="openLost('${p.id}')">标流失</button>
-      <button class="btn btn-default" onclick="openFactory('${p.id}')">添加工厂</button>
+      <button class="btn btn-default" onclick="openFactory('${p.id}')">添加拆单包</button>
       <button class="btn btn-default" onclick="openRectify('${p.id}')">打开整改</button>
     </div></div>`}
     <div class="info-grid info-grid-5">
@@ -530,10 +565,16 @@ function renderProjectDetail(){
         }).join('')}
       </tbody></table></div>`:'<div class="empty-inline">还没有上传的文件。没有规定文件的步骤不会出现在这里。</div>'}
     </div>
-    <div class="section"><div class="section-title">工厂</div>
-      ${(p.factories||[]).length?`<div class="table-wrap"><table class="data"><thead><tr><th>名称</th><th>内容</th><th>金额</th><th>时间</th></tr></thead><tbody>
-        ${p.factories.map(f=>`<tr><td>${esc(f.name)}</td><td>${esc(f.content)}</td><td>${money(f.amount)}</td><td>${esc(f.at)}</td></tr>`).join('')}
-      </tbody></table></div>`:'<div class="empty-inline">还没有工厂。金额用来对账和提醒打款，不计入项目成本。</div>'}
+    <div class="section"><div class="section-title">拆单包 <span style="font-weight:400;color:var(--text-muted);font-size:12px">${(p.factories||[]).length?((p.factories||[]).length+' 包 · 齐套 '+pkgReadiness(p)+'%'):'还没拆'}</span></div>
+      ${(p.factories||[]).length?`<div class="callout">${(()=>{
+        const slow=pkgSlowest(p);
+        const lateDone=(p.factories||[]).filter(f=>pkgReady(f)&&f.promise&&f.forecast&&f.forecast>f.promise);
+        const bits=['齐套率 '+pkgReadiness(p)+'%。总交期看最慢的包'+(slow?'：'+slow.content+' · '+slow.name+'，预测 '+slow.forecast:'')+'。金额用来对账，不计入项目成本。'];
+        if(lateDone.length) bits.push(lateDone.map(f=>f.content+'比承诺晚到 '+f.actual+'。').join(''));
+        return esc(bits.join(''));
+      })()}</div><div class="table-wrap"><table class="data"><thead><tr><th>包</th><th>工厂</th><th>金额</th><th>承诺</th><th>预测</th><th>实际</th><th>状态</th><th>进度</th><th class="col-ops">操作</th></tr></thead><tbody>
+        ${p.factories.map((f,i)=>`<tr><td>${esc(f.content)}</td><td>${esc(f.name)}</td><td>${money(f.amount)}</td><td>${esc(f.promise||'—')}</td><td>${esc(f.forecast||'—')}</td><td>${esc(f.actual||'—')}</td><td>${pkgBadge(f)}</td><td style="min-width:100px"><div class="prog"><i class="${pkgReady(f)?'ok':pkgLate(f)?'risk':''}" style="width:${pkgProgress(f)}%"></i></div></td><td>${p.lost?'—':`<button type="button" class="btn btn-sm btn-default" onclick="openPkgStatus('${p.id}',${i})">改状态</button>`}</td></tr>`).join('')}
+      </tbody></table></div>`:'<div class="empty-inline">还没有拆单包。一个项目可以拆多包，点上面的「添加拆单包」。</div>'}
     </div>
     <div class="section"><div class="section-title">整改</div>
       ${(p.rectifies||[]).length?`<div class="table-wrap"><table class="data"><thead><tr><th>事项</th><th>说明</th><th>状态</th><th>时间</th></tr></thead><tbody>
@@ -831,11 +872,12 @@ function openLost(id){
 }
 function openFactory(id){
   const p=findProject(id);if(!p||p.lost) return;
-  openModule('添加工厂', `
-    <p class="page-note">新增一条工厂记录。金额用来对账和提醒打款，不计入项目成本。</p>
-    <div class="form-group" id="facNameGroup"><label>名称 <span class="req">*</span></label><input class="input" id="facName" /><div class="form-error">请填写名称</div></div>
-    <div class="form-group"><label>内容</label><select class="input select" id="facContent" style="width:100%"><option>柜体</option><option>门板</option><option>台面</option><option>五金</option><option>其他</option></select></div>
+  openModule('添加拆单包', `
+    <p class="page-note">一个项目可以拆多包。金额用来对账和提醒打款，不计入项目成本。同一品类也可以再加一条。</p>
+    <div class="form-group"><label>包</label><select class="input select" id="facContent" style="width:100%"><option>柜体</option><option>门板</option><option>台面</option><option>五金</option><option>其他</option></select></div>
+    <div class="form-group" id="facNameGroup"><label>工厂 <span class="req">*</span></label><input class="input" id="facName" /><div class="form-error">请填写工厂</div></div>
     <div class="form-group" id="facAmountGroup"><label>金额 <span class="req">*</span></label><input class="input" id="facAmount" placeholder="0.00" /><div class="form-error">请填写金额</div></div>
+    <div class="form-row"><div class="form-group"><label>承诺日</label><input class="input" type="date" id="facPromise" /></div><div class="form-group"><label>预测日</label><input class="input" type="date" id="facForecast" /></div></div>
   `, ()=>{
     const name=document.getElementById('facName').value.trim();
     const amount=Number(document.getElementById('facAmount').value);
@@ -845,9 +887,28 @@ function openFactory(id){
     if(!ok) return false;
     const content=document.getElementById('facContent').value;
     p.factories=p.factories||[];
-    p.factories.push({name, content, amount, at:stepNow()});
-    pushChange(p,'添加工厂','未填', name+' '+money(amount));
-    toast('已添加工厂');render();
+    p.factories.push({name, content, amount, promise:document.getElementById('facPromise').value, forecast:document.getElementById('facForecast').value, actual:'', status:'待开工', at:stepNow()});
+    pushChange(p,'添加拆单包','未填', content+' · '+name+' '+money(amount));
+    toast('已添加拆单包');render();
+  });
+}
+function openPkgStatus(id, index){
+  const p=findProject(id);if(!p||p.lost) return;
+  const f=(p.factories||[])[index];if(!f) return;
+  openModule('改状态 · '+f.content, `
+    <p class="page-note">${esc(f.name)}。已完工和已到货算齐套。预测日过了还没齐，生产协同时会显示延期。</p>
+    <div class="form-group"><label>状态</label><select class="input select" id="pkgStatus" style="width:100%">${['待开工','备货中','生产中','已完工','已到货'].map(s=>`<option ${f.status===s?'selected':''}>${s}</option>`).join('')}</select></div>
+    <div class="form-group"><label>预测日</label><input class="input" type="date" id="pkgForecast" value="${esc(f.forecast||'')}" /></div>
+    <div class="form-group"><label>实际日</label><input class="input" type="date" id="pkgActual" value="${esc(f.actual||'')}" /></div>
+  `, ()=>{
+    const status=document.getElementById('pkgStatus').value;
+    const forecast=document.getElementById('pkgForecast').value;
+    let actual=document.getElementById('pkgActual').value;
+    if((status==='已完工'||status==='已到货')&&!actual) actual=TODAY;
+    const before=f.status||'待开工';
+    f.status=status;f.forecast=forecast;f.actual=actual;
+    pushChange(p,'改拆单包', before, f.content+' '+status);
+    toast('已更新 '+f.content);render();
   });
 }
 function openRectify(id){
