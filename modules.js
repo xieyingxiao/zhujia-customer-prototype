@@ -148,7 +148,7 @@ function financeSummary(){
 }
 
 function todayTable(list, who){
-  const rows=list.map(t=>`<tr><td>${esc(t.kind)}</td><td><strong>${esc(t.title)}</strong><div class="project-meta">${esc(t.sub)}</div></td><td>${esc(t.detail)}</td><td>${esc(t.owner)}</td><td><button class="btn btn-sm btn-primary" onclick="openWork('${t.view}','${t.id}')">去处理</button></td></tr>`).join('');
+  const rows=list.map(t=>`<tr><td>${esc(t.kind)}</td><td><strong>${esc(t.title)}</strong><div class="project-meta">${esc(t.sub)}</div></td><td>${esc(t.detail)}</td><td>${esc(t.owner)}</td><td class="col-ops"><button class="btn btn-sm btn-primary" onclick="openWork('${t.view}','${t.id}')">去处理</button></td></tr>`).join('');
   return `<div class="table-wrap"><table class="data"><thead><tr><th>事项</th><th>${who}</th><th>现在的情况</th><th>该谁处理</th><th class="col-ops">操作</th></tr></thead><tbody>
     ${rows||`<tr><td colspan="5">这块今天没有要处理的</td></tr>`}
   </tbody></table></div><div class="pager"><span class="info">共 ${list.length} 条</span></div>`;
@@ -159,11 +159,11 @@ function renderToday(){
   const jobs=all.filter(t=>t.group==='project');
   pageShell(`
     <div class="block-title" style="margin-top:0">今日待办 ${all.length} 条 <button class="btn btn-default btn-sm" onclick="render()">刷新</button></div>
-    <p class="page-note">上面是还没签约的客户，下面是已经立项的项目。点「去处理」进入这个客户或这个项目。没有挂在项目上的日常开支，到收支记账里看。</p>
-    <div class="block-title">未签约客户 ${people.length} 条</div>
-    ${todayTable(people,'客户')}
-    <div class="block-title">已签约项目 ${jobs.length} 条</div>
-    ${todayTable(jobs,'项目')}
+    <p class="page-note">左边是还没签约的客户，右边是已经立项的项目。点「去处理」进入这个客户或这个项目。没有挂在项目上的日常开支，到收支记账里看。</p>
+    <div class="today-split">
+      <section class="today-pane"><div class="block-title">未签约客户 ${people.length} 条</div>${todayTable(people,'客户')}</section>
+      <section class="today-pane"><div class="block-title">已签约项目 ${jobs.length} 条</div>${todayTable(jobs,'项目')}</section>
+    </div>
   `);
 }
 

@@ -408,6 +408,12 @@ textarea.input{height:auto;min-height:88px;padding:10px 12px;resize:vertical;lin
 .kpi .s{font-size:12px;color:var(--text-muted);margin-top:2px}
 .page-note{font-size:13px;color:var(--text-secondary);line-height:1.6;margin:0 0 14px}
 .block-title{font-size:15px;font-weight:600;margin:22px 0 10px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.today-split{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:16px;align-items:start}
+.today-pane{min-width:0}
+.today-pane .block-title{margin-top:0}
+.today-pane th.col-ops,.today-pane td.col-ops{position:sticky;right:0;z-index:2;background:#fff;box-shadow:-2px 0 4px rgba(0,0,0,.04)}
+.today-pane th.col-ops{background:#fafafa;z-index:3}
+@media(max-width:1100px){.today-split{grid-template-columns:minmax(0,1fr)}}
 .mini-tabs{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
 .rule-off{opacity:.45}
 .margin-bad{color:var(--danger);font-weight:600}
@@ -642,7 +648,7 @@ textarea.input{height:auto;min-height:88px;padding:10px 12px;resize:vertical;lin
     <li>合作伙伴单独成页：添加、编辑、停用、删除。停用后不再出现在分发里，已经分出的客户仍保留名字</li>
     <li>邀约、到店先弹出确认：到店时间必填；到店还可以填接待方式和接待人。到店写进跟进记录，不再单独列出到店记录</li>
     <li>上传图纸先选类型和文件。一位客户只留一张，再传会换掉原来的。可以预览和删除</li>
-    <li>今日待办分成未签约客户和已签约项目</li>
+    <li>今日待办左右分成未签约客户和已签约项目</li>
     <li>记跟进可写方式/内容/下次时间，真追加</li>
     <li>建档打开不报错；失焦/提交才校验；重复提示</li>
     <li>批量建档三步：模板→上传→结果</li>
