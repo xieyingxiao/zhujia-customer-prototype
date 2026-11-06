@@ -640,7 +640,7 @@ textarea.input{height:auto;min-height:88px;padding:10px 12px;resize:vertical;lin
     <li>详情：上半信息加「服务类型」（自营/分发）；「记下跟进」主按钮；步骤条；时间线；预报价禁用原因留在接待进度</li>
     <li>分发：不可服务只保留超出半径和其他，从合作伙伴名录里多选；确定后服务类型变分发并记入时间线</li>
     <li>合作伙伴单独成页：添加、编辑、停用、删除。停用后不再出现在分发里，已经分出的客户仍保留名字</li>
-    <li>邀约、到店先弹出确认：到店时间必填；到店还可以填接待方式和接待人</li>
+    <li>邀约、到店先弹出确认：到店时间必填；到店还可以填接待方式和接待人。到店写进跟进记录，不再单独列出到店记录</li>
     <li>上传图纸先选类型和文件。一位客户只留一张，再传会换掉原来的。可以预览和删除</li>
     <li>记跟进可写方式/内容/下次时间，真追加</li>
     <li>建档打开不报错；失焦/提交才校验；重复提示</li>
@@ -660,21 +660,21 @@ let customers = [
     follows:[
       {method:'微信',content:'已通话，已加微信。客户表示周末有空，可约到店看样板。',time:'2026-11-04 17:57',author:'老板',next:'2026-11-05 10:00'},
       {method:'电话',content:'首次外呼接通，介绍了住家研选服务，客户有装修意向，约微信详聊。',time:'2026-11-04 15:20',author:'老板',next:null}
-    ], visits:[], projects:[]},
-  {id:'KH-2026-002',name:'林晓',phone:'13800001002',wechat:'wx_linxiao',city:'成都',source:'线上',channel:'抖音视频',intent:'B',status:'已成交',points:100,owner:'老板',serviceType:'自营',dealers:[],distributeReason:'',nextFollow:null,lastFollow:'2026-10-28 14:00',contactNote:'已通话 · 已加微信',hasDrawing:true,drawing:{slot:'户型图',name:'林晓-户型图.pdf',type:'application/pdf',url:''},reception:6,follows:[{method:'到店',content:'签约完成，进入施工排期。',time:'2026-10-28 14:00',author:'老板',next:null}],visits:[{time:'2026-10-20',note:'到店看样板间'}],
+    ], projects:[]},
+  {id:'KH-2026-002',name:'林晓',phone:'13800001002',wechat:'wx_linxiao',city:'成都',source:'线上',channel:'抖音视频',intent:'B',status:'已成交',points:100,owner:'老板',serviceType:'自营',dealers:[],distributeReason:'',nextFollow:null,lastFollow:'2026-10-28 14:00',contactNote:'已通话 · 已加微信',hasDrawing:true,drawing:{slot:'户型图',name:'林晓-户型图.pdf',type:'application/pdf',url:''},reception:6,visitTime:'2026-10-20',follows:[{method:'到店',content:'签约完成，进入施工排期。',time:'2026-10-28 14:00',author:'老板',next:null},{method:'到店',content:'到店看样板间',time:'2026-10-20',author:'老板',next:null}],
     projects:[
       {id:'XM-2026-018',name:'林晓 · 麓山全屋',community:'麓山国际',room:'3-1-1802',layout:'三室两厅',budget:'28.6万',stage:'安装中',owner:'老板'},
       {id:'XM-2026-027',name:'林晓 · 次卧加柜',community:'麓山国际',room:'3-1-1802',layout:'次卧',budget:'2.4万',stage:'平面待确认',owner:'老板'}
     ]},
-  {id:'KH-2026-003',name:'赵敏',phone:'13800001003',wechat:'wx_zhaomin',city:'杭州',source:'线上',channel:'小红书视频',intent:'C',status:'新线索',points:50,owner:'老板',serviceType:'自营',dealers:[],distributeReason:'',nextFollow:'2026-11-05 15:00',lastFollow:null,contactNote:'',hasDrawing:false,reception:1,follows:[],visits:[],projects:[]},
-  {id:'KH-2026-004',name:'周凯',phone:'13800001004',wechat:'wx_zhoukai',city:'武汉',source:'线上',channel:'视频号',intent:'A',status:'新线索',points:150,owner:'小王',serviceType:'分发',dealers:['武汉邻里装'],distributeReason:'超出服务半径',nextFollow:'2026-11-06 09:30',lastFollow:null,contactNote:'',hasDrawing:false,reception:1,follows:[],visits:[],projects:[]},
-  {id:'KH-2026-005',name:'吴婷',phone:'13800001005',wechat:'wx_wuting',city:'西安',source:'线上',channel:'豆包',intent:'B',status:'已成交',points:100,owner:'老板',serviceType:'自营',dealers:[],distributeReason:'',nextFollow:null,lastFollow:'2026-10-15 11:00',contactNote:'已通话 · 已加微信',hasDrawing:true,drawing:{slot:'施工图',name:'吴婷-施工图.jpg',type:'image/jpeg',url:''},reception:6,follows:[],visits:[],
+  {id:'KH-2026-003',name:'赵敏',phone:'13800001003',wechat:'wx_zhaomin',city:'杭州',source:'线上',channel:'小红书视频',intent:'C',status:'新线索',points:50,owner:'老板',serviceType:'自营',dealers:[],distributeReason:'',nextFollow:'2026-11-05 15:00',lastFollow:null,contactNote:'',hasDrawing:false,reception:1,follows:[],projects:[]},
+  {id:'KH-2026-004',name:'周凯',phone:'13800001004',wechat:'wx_zhoukai',city:'武汉',source:'线上',channel:'视频号',intent:'A',status:'新线索',points:150,owner:'小王',serviceType:'分发',dealers:['武汉邻里装'],distributeReason:'超出服务半径',nextFollow:'2026-11-06 09:30',lastFollow:null,contactNote:'',hasDrawing:false,reception:1,follows:[],projects:[]},
+  {id:'KH-2026-005',name:'吴婷',phone:'13800001005',wechat:'wx_wuting',city:'西安',source:'线上',channel:'豆包',intent:'B',status:'已成交',points:100,owner:'老板',serviceType:'自营',dealers:[],distributeReason:'',nextFollow:null,lastFollow:'2026-10-15 11:00',contactNote:'已通话 · 已加微信',hasDrawing:true,drawing:{slot:'施工图',name:'吴婷-施工图.jpg',type:'image/jpeg',url:''},reception:6,follows:[],
     projects:[{id:'XM-2026-009',name:'吴婷 · 曲江定制',community:'曲江公馆',room:'7-2-901',layout:'两室一厅',budget:'16.8万',stage:'已验收',owner:'老板'}]},
-  {id:'KH-2026-006',name:'郑浩',phone:'13800001006',wechat:'wx_zhenghao',city:'南京',source:'线下',channel:'老客户转介绍',intent:'C',status:'新线索',points:50,owner:'小李',serviceType:'自营',dealers:[],distributeReason:'',nextFollow:'2026-11-03 16:00',lastFollow:null,contactNote:'',hasDrawing:false,reception:1,follows:[],visits:[],projects:[]},
-  {id:'KH-2026-007',name:'孙莉',phone:'13800001007',wechat:'wx_sunli',city:'长沙',source:'线下',channel:'设计师/前端合作',intent:'',status:'新线索',points:null,owner:'老板',serviceType:'自营',dealers:[],distributeReason:'',nextFollow:'2026-11-07 10:00',lastFollow:null,contactNote:'',hasDrawing:false,reception:1,follows:[],visits:[],projects:[]},
-  {id:'KH-2026-008',name:'钱程',phone:'13800001008',wechat:'wx_qiancheng',city:'青岛',source:'线下',channel:'同行异业',intent:'A',status:'新线索',points:150,owner:'小王',serviceType:'分发',dealers:['青岛海纳家居'],distributeReason:'其他',nextFollow:'2026-11-05 11:00',lastFollow:null,contactNote:'',hasDrawing:false,reception:1,follows:[],visits:[],projects:[]},
-  {id:'KH-2026-009',name:'冯雪',phone:'13800001009',wechat:'wx_fengxue',city:'苏州',source:'线下',channel:'自然到店/来电',intent:'B',status:'新线索',points:100,owner:'老板',serviceType:'自营',dealers:[],distributeReason:'',nextFollow:'2026-11-08 14:00',lastFollow:'2026-11-02 09:30',contactNote:'已通话',hasDrawing:false,reception:1,follows:[],visits:[],projects:[]},
-  {id:'KH-2026-010',name:'韩磊',phone:'13800001010',wechat:'wx_hanlei',city:'昆明',source:'线上',channel:'抖音直播',intent:'C',status:'新线索',points:50,owner:'小李',serviceType:'分发',dealers:['昆明暖居'],distributeReason:'超出服务半径',nextFollow:'2026-11-06 18:00',lastFollow:null,contactNote:'',hasDrawing:false,reception:1,follows:[],visits:[],projects:[]}
+  {id:'KH-2026-006',name:'郑浩',phone:'13800001006',wechat:'wx_zhenghao',city:'南京',source:'线下',channel:'老客户转介绍',intent:'C',status:'新线索',points:50,owner:'小李',serviceType:'自营',dealers:[],distributeReason:'',nextFollow:'2026-11-03 16:00',lastFollow:null,contactNote:'',hasDrawing:false,reception:1,follows:[],projects:[]},
+  {id:'KH-2026-007',name:'孙莉',phone:'13800001007',wechat:'wx_sunli',city:'长沙',source:'线下',channel:'设计师/前端合作',intent:'',status:'新线索',points:null,owner:'老板',serviceType:'自营',dealers:[],distributeReason:'',nextFollow:'2026-11-07 10:00',lastFollow:null,contactNote:'',hasDrawing:false,reception:1,follows:[],projects:[]},
+  {id:'KH-2026-008',name:'钱程',phone:'13800001008',wechat:'wx_qiancheng',city:'青岛',source:'线下',channel:'同行异业',intent:'A',status:'新线索',points:150,owner:'小王',serviceType:'分发',dealers:['青岛海纳家居'],distributeReason:'其他',nextFollow:'2026-11-05 11:00',lastFollow:null,contactNote:'',hasDrawing:false,reception:1,follows:[],projects:[]},
+  {id:'KH-2026-009',name:'冯雪',phone:'13800001009',wechat:'wx_fengxue',city:'苏州',source:'线下',channel:'自然到店/来电',intent:'B',status:'新线索',points:100,owner:'老板',serviceType:'自营',dealers:[],distributeReason:'',nextFollow:'2026-11-08 14:00',lastFollow:'2026-11-02 09:30',contactNote:'已通话',hasDrawing:false,reception:1,follows:[],projects:[]},
+  {id:'KH-2026-010',name:'韩磊',phone:'13800001010',wechat:'wx_hanlei',city:'昆明',source:'线上',channel:'抖音直播',intent:'C',status:'新线索',points:50,owner:'小李',serviceType:'分发',dealers:['昆明暖居'],distributeReason:'超出服务半径',nextFollow:'2026-11-06 18:00',lastFollow:null,contactNote:'',hasDrawing:false,reception:1,follows:[],projects:[]}
 ];
 let state = {view:'list',detailId:null,projectId:null,filterTab:'全部',search:'',intentFilter:'',sourceFilter:'',stageFilter:'',sortKey:'nextFollow',sortDir:'asc',followTargetId:null,batchStep:1,listScroll:0,todayFilter:'全部',actionFilter:'全部',showEnded:false,dealerQ:''};
 customers.forEach(c=>{
@@ -914,7 +914,7 @@ function renderDetail(){
     else {cls='pending';meta='未开始';}
     if(cls==='done'&&n===2&&c.follows[0]){meta=`老板 · ${c.follows[0].time.slice(0,16)}`;}
     if(cls==='done'&&n===3&&c.inviteTime){meta=esc(c.inviteTime);}
-    if(cls==='done'&&n===4&&c.visits[0]){meta=esc(c.visits[0].time);}
+    if(cls==='done'&&n===4&&c.visitTime){meta=esc(c.visitTime);}
     if(n===5 && c.quote==='不做'){meta='不做'+(c.quoteSkipReason?' · '+esc(c.quoteSkipReason):'');}
     if(n>c.reception){
       if(n===3) action=`<div class="step-action"><button class="btn btn-sm ${cls==='current'?'btn-primary':'btn-default'}" onclick="openInvite()">邀约</button></div>`;
@@ -968,10 +968,6 @@ function renderDetail(){
         <div>
           <div class="section"><div class="section-title">图纸 <button class="btn btn-default btn-sm" onclick="openDrawing()">上传图纸</button></div>
             ${c.drawing?`<div class="table-wrap"><table class="data"><thead><tr><th>类型</th><th>文件</th><th>操作</th></tr></thead><tbody><tr><td>${esc(c.drawing.slot)}</td><td>${esc(c.drawing.name)}</td><td><button class="btn btn-text btn-sm" onclick="previewDrawing()">预览</button><button class="btn btn-text btn-sm danger" onclick="deleteDrawing()">删除</button></td></tr></tbody></table></div>`:`<p style="color:var(--text-secondary);font-size:13px;margin:0">还没有户型图或施工图。预报价之前要先传一张。</p><p style="font-size:12px;color:var(--text-muted);margin-top:8px">「预算已发」按钮在上传图纸前不可用。</p>`}
-          </div>
-          <div class="section"><div class="section-title">到店记录</div>
-            ${c.visits.length?c.visits.map(v=>`<div style="padding:10px;background:var(--bg);border-radius:6px;margin-bottom:8px;font-size:13px">${esc(v.time)} · ${esc(v.note)}</div>`).join(''):
-              `<div style="padding:20px;text-align:center;color:var(--text-muted);font-size:13px;background:var(--bg);border-radius:8px">还没有到店记录</div>`}
           </div>
         </div>
         <div><div class="side-card"><h3>跟进记录 <button class="btn btn-text btn-sm" onclick="openFollow()">+ 记下</button></h3><div class="timeline">${timeline}</div></div></div>
@@ -1075,7 +1071,7 @@ function submitCreate(){
   const intent=document.getElementById('cIntent').value;
   const n=customers.length+1;const id='KH-2026-'+String(n).padStart(3,'0');
   const points=Object.prototype.hasOwnProperty.call(GRADE_POINTS,intent)?GRADE_POINTS[intent]:null;
-  customers.unshift({id,name,phone:phone||'',wechat,city,source,channel,intent,status:'新线索',points,owner:'老板',serviceType:'自营',dealers:[],distributeReason:'',nextFollow:null,lastFollow:null,contactNote:'',hasDrawing:false,reception:1,follows:[],visits:[],projects:[],boardStage:'跟进中',quote:'还没有',quoteSkipReason:'',returnVisit:null,lostReason:'',highBudget:false});
+  customers.unshift({id,name,phone:phone||'',wechat,city,source,channel,intent,status:'新线索',points,owner:'老板',serviceType:'自营',dealers:[],distributeReason:'',nextFollow:null,lastFollow:null,contactNote:'',hasDrawing:false,reception:1,follows:[],projects:[],boardStage:'跟进中',quote:'还没有',quoteSkipReason:'',returnVisit:null,lostReason:'',highBudget:false});
   closeModal('createModal');toast('建档成功：'+name);state.filterTab='全部';state.search='';render();
 }
 function openBatch(){state.batchStep=1;updateBatchUI();openModal('batchModal');}
@@ -1145,7 +1141,10 @@ function openVisit(){
     const c=advanceReception(4);if(!c)return false;
     const method=document.getElementById('visitMethod').value.trim();
     const host=document.getElementById('visitHost').value.trim();
-    c.visits.unshift({time:raw.replace('T',' '), note:[method, host].filter(Boolean).join(' · ') || '到店接待'});
+    const time=raw.replace('T',' ');
+    c.visitTime=time;
+    c.follows.unshift({method:'到店',content:method||'到店接待',time,author:host||'老板',next:null});
+    if(!c.lastFollow||c.lastFollow<time) c.lastFollow=time;
     toast('已记录到店');render();
   });
 }

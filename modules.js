@@ -313,7 +313,7 @@ function submitProject(){
       const channel=document.getElementById('pChannel').value||'—';
       const source=CHANNEL_SOURCE[channel]||'—';
       const nid='KH-2026-'+String(customers.length+1).padStart(3,'0');
-      customer={id:nid,name,phone,wechat:wx||('wx_'+Date.now().toString().slice(-6)),city,source,channel,intent:'',status:'已成交',points:null,owner:'老板',serviceType:'自营',dealers:[],distributeReason:'',nextFollow:null,lastFollow:null,contactNote:'',hasDrawing:false,reception:5,follows:[],visits:[],projects:[],boardStage:'已成交',quote:'已发',quoteSkipReason:'',returnVisit:null,lostReason:'',highBudget:false};
+      customer={id:nid,name,phone,wechat:wx||('wx_'+Date.now().toString().slice(-6)),city,source,channel,intent:'',status:'已成交',points:null,owner:'老板',serviceType:'自营',dealers:[],distributeReason:'',nextFollow:null,lastFollow:null,contactNote:'',hasDrawing:false,reception:5,follows:[],projects:[],boardStage:'已成交',quote:'已发',quoteSkipReason:'',returnVisit:null,lostReason:'',highBudget:false};
       customers.unshift(customer);
     }
   }
