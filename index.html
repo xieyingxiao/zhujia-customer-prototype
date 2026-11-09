@@ -783,6 +783,7 @@ tr.step-locked td{color:var(--text-muted)}
     <li>整改表未关闭的一行可以点「关闭」。确认后仍打开变成否，这条记录留在表里</li>
     <li>待处理只算约定时间已经过了、还没做完。已签约项目只显示这种超时数据，计划还没到的不放进来</li>
     <li>还没首触的未签约客户也算待处理。同一个人只占一行，说明里同时写没首触和跟进已过期</li>
+    <li>跟进方式选到店时，邀约到店和到店接待一起完成。已经走到预报价的不退回</li>
     <li>邀约、到店先弹出确认：到店时间必填；到店还可以填接待方式和接待人。到店写进跟进记录，不再单独列出到店记录</li>
     <li>上传图纸先选类型和文件。一位客户只留一张，再传会换掉原来的。可以预览和删除</li>
     <li>今日待办左右分成未签约客户和已签约项目</li>
@@ -962,7 +963,14 @@ function applyHash(){
 }
 window.addEventListener('hashchange',()=>{applyHash();render();});
 
+function syncStoreVisits(){
+  customers.forEach(c=>{
+    const times=(c.follows||[]).filter(f=>f.method==='到店'&&f.time).map(f=>f.time).sort();
+    if(times.length) applyStoreVisit(c, times[0]);
+  });
+}
 function render(){
+  syncStoreVisits();
   const map={detail:renderDetail,list:renderList,home:renderHome,actions:renderActions,production:renderProduction,project:renderProjects,projectDetail:renderProjectDetail,finance:renderFinance,expenses:renderExpenses,commission:renderCommission,margin:renderMargin,dealers:renderDealers,factories:renderFactories,rules:renderRules,accounts:renderAccounts};
   (map[state.view]||renderList)();
   updateChrome();
@@ -1198,8 +1206,10 @@ function submitFollow(){
     if(grade!==gradeFrom) c.intent=grade;
     if(pause && c.boardStage!=='已成交' && c.boardStage!=='流失'){c.boardStage='暂缓';c.returnVisit=returnDay;}
     c.lastFollow=now;if(next)c.nextFollow=next;
-    if(c.status==='新线索')c.status='已联系';if(c.reception<2)c.reception=2;
-    if(!c.contactNote)c.contactNote=method==='电话'?'已通话':method==='微信'?'已加微信':'已联系';
+    if(c.status==='新线索')c.status='已联系';
+    if(method==='到店') applyStoreVisit(c, now);
+    else if(c.reception<2) c.reception=2;
+    if(!c.contactNote)c.contactNote=method==='电话'?'已通话':method==='微信'?'已加微信':method==='到店'?'已到店':'已联系';
     btn.disabled=false;btn.textContent='保存';closeModal('followModal');toast('跟进已保存');render();
   },700);
 }
@@ -1274,6 +1284,12 @@ function confirmLost(){
   c.status='已流失';c.boardStage='流失';c.lostReason=reason;c.nextFollow=null;
   closeModal('lostModal');toast('已标记为流失');render();
 }
+function applyStoreVisit(c, time){
+  if(!c) return;
+  if(c.reception<4) c.reception=4;
+  if(!c.visitTime) c.visitTime=String(time||'').replace('T',' ').slice(0,16);
+  if(c.status==='新线索') c.status='已联系';
+}
 function advanceReception(n){
   const c=customers.find(x=>x.id===state.detailId);if(!c)return null;
   if(c.reception!==n-1){toast('请先完成上一步接待');return null;}
@@ -1314,8 +1330,8 @@ function openVisit(){
     const method=document.getElementById('visitMethod').value.trim();
     const host=document.getElementById('visitHost').value.trim();
     const time=raw.replace('T',' ');
-    c.visitTime=time;
     c.follows.unshift({method:'到店',content:method||'到店接待',time,author:host||'老板',next:null});
+    applyStoreVisit(c, time);
     if(!c.lastFollow||c.lastFollow<time) c.lastFollow=time;
     toast('已记录到店');render();
   });
