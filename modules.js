@@ -72,9 +72,6 @@ let COMMISSIONS = [
   {kind:'销售提成', owner:'销售小李', project:'HT-202611-001', base:100000, rate:2, amount:2000, due:'2026-10-30', status:'已发'}
 ];
 let RULES = [
-  {name:'A类分级积分', value:'150', enabled:true},
-  {name:'B类分级积分', value:'100', enabled:true},
-  {name:'C类分级积分', value:'50', enabled:true},
   {name:'10万以内分发抽成比例', value:'2.50', enabled:true},
   {name:'超过10万的分发抽成比例', value:'3.00', enabled:true},
   {name:'分发抽成分档线', value:'100000.00', enabled:true},
@@ -1209,7 +1206,7 @@ function submitProject(){
       const channel=document.getElementById('pChannel').value||'—';
       const source=CHANNEL_SOURCE[channel]||'—';
       const nid='KH-2026-'+String(customers.length+1).padStart(3,'0');
-      customer={id:nid,name,phone,wechat:wx||('wx_'+Date.now().toString().slice(-6)),city,source,channel,intent:'',status:'已成交',points:null,owner:'老板',serviceType:'自营',dealers:[],distributeReason:'',nextFollow:null,lastFollow:null,contactNote:'',hasDrawing:false,reception:5,follows:[],projects:[],boardStage:'已成交',quote:'已发',quoteSkipReason:'',returnVisit:null,lostReason:'',highBudget:false};
+      customer={id:nid,name,phone,wechat:wx||('wx_'+Date.now().toString().slice(-6)),city,source,channel,intent:'',status:'已成交',owner:'老板',serviceType:'自营',dealers:[],distributeReason:'',nextFollow:null,lastFollow:null,contactNote:'',hasDrawing:false,reception:5,follows:[],projects:[],boardStage:'已成交',quote:'已发',quoteSkipReason:'',returnVisit:null,lostReason:'',highBudget:false};
       customers.unshift(customer);
     }
   }
@@ -1398,7 +1395,7 @@ function shareRows(title, rows){
 
 function renderRules(){
   pageShell(`
-    <div class="page-head"><div><h1>规则设置</h1><p>当前岗位 负责人。财务只能看。修改必须填原因。停用后这条规则不再参与计算，已写下的积分和抽成不会改写。</p></div></div>
+    <div class="page-head"><div><h1>规则设置</h1><p>当前岗位 负责人。财务只能看。修改必须填原因。停用后这条规则不再参与计算，已写下的抽成不会改写。</p></div></div>
     <div class="table-wrap"><table class="data"><thead><tr><th>规则</th><th>当前值</th><th class="col-ops">操作</th></tr></thead><tbody>
       ${RULES.map((r,i)=>`<tr class="${r.enabled?'':'rule-off'}"><td>${esc(r.name)}</td><td>${esc(r.value)}${r.enabled?'':' · 已停用'}</td><td><div class="ops"><button class="btn btn-sm btn-default" onclick="editRule(${i})">编辑</button><button class="btn btn-sm btn-default" onclick="toggleRule(${i})">${r.enabled?'停用':'启用'}</button></div></td></tr>`).join('')}
     </tbody></table></div>
@@ -1423,9 +1420,6 @@ function editRule(i){
     if(!reason){fieldError('rReasonGroup');ok=false;}
     if(!ok) return false;
     r.value=value;
-    if(r.name==='A类分级积分') GRADE_POINTS.A=Number(value);
-    if(r.name==='B类分级积分') GRADE_POINTS.B=Number(value);
-    if(r.name==='C类分级积分') GRADE_POINTS.C=Number(value);
     toast('已修改，原因：'+reason);render();
   });
 }
