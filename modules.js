@@ -767,9 +767,10 @@ function renderProjectDetail(){
       </tbody></table></div>`:'<div class="empty-inline">还没有拆单包。一个项目可以拆多包，点上面的「添加拆单包」。</div>'}
     </div>
     <div class="section"><div class="section-title">整改</div>
-      ${(p.rectifies||[]).length?`<div class="table-wrap"><table class="data"><thead><tr><th>事项</th><th>说明</th><th>状态</th><th>时间</th></tr></thead><tbody>
-        ${p.rectifies.map(r=>`<tr><td>${esc(r.title)}</td><td>${esc(r.note||'—')}</td><td>${esc(r.status)}</td><td>${esc(r.at)}</td></tr>`).join('')}
-      </tbody></table></div>`:'<div class="empty-inline">还没有整改。</div>'}
+      <p class="page-note">打开后记在这张表里。仍打开的一行可以关闭。关掉之后这条还留着，只是不能再关一次。</p>
+      ${(p.rectifies||[]).length?`<div class="table-wrap"><table class="data"><thead><tr><th>整改项</th><th>说明</th><th>打开日</th><th>仍打开</th><th class="col-ops">操作</th></tr></thead><tbody>
+        ${p.rectifies.map((r,i)=>{const open=r.status!=='已关闭';return `<tr class="${open?'row-watch':''}"><td>${esc(r.title)}</td><td>${esc(r.note||'—')}</td><td>${esc(r.at)}</td><td>${open?'是':'否'}</td><td class="col-ops">${open&&!p.lost?`<button type="button" class="btn btn-sm btn-default" onclick="closeRectify('${p.id}',${i})">关闭</button>`:'—'}</td></tr>`;}).join('')}
+      </tbody></table></div>`:'<div class="empty-inline">还没有整改</div>'}
     </div>
     <div class="section"><div class="section-title">变更记录</div>
       ${(p.changes||[]).length?`<div class="table-wrap"><table class="data"><thead><tr><th>时间</th><th>谁</th><th>事项</th><th>从</th><th>到</th></tr></thead><tbody>
@@ -1143,16 +1144,28 @@ function openRectify(id){
   const p=findProject(id);if(!p||p.lost) return;
   openModule('打开整改', `
     <p class="page-note">新增一条未关闭的整改，记在下面的整改表里。</p>
-    <div class="form-group" id="rfTitleGroup"><label>事项 <span class="req">*</span></label><input class="input" id="rfTitle" /><div class="form-error">请填写事项</div></div>
+    <div class="form-group" id="rfTitleGroup"><label>整改项 <span class="req">*</span></label><input class="input" id="rfTitle" /><div class="form-error">请填写整改项</div></div>
     <div class="form-group"><label>说明</label><textarea class="input" id="rfNote"></textarea></div>
   `, ()=>{
     const title=document.getElementById('rfTitle').value.trim();
     clearField('rfTitleGroup');
-    if(!title){fieldError('rfTitleGroup');return false;}
+    if(!title){fieldError('rfTitleGroup','请填写整改项');return false;}
     p.rectifies=p.rectifies||[];
     p.rectifies.push({title, note:document.getElementById('rfNote').value.trim(), status:'未关闭', at:stepNow()});
     pushChange(p,'打开整改','未填', title);
     toast('已打开整改');render();
+  });
+}
+function closeRectify(id, i){
+  const p=findProject(id);if(!p||p.lost) return;
+  const r=(p.rectifies||[])[i];
+  if(!r||r.status==='已关闭') return;
+  openModule('关闭整改', `<p style="margin:0">确认关闭整改「${esc(r.title)}」？</p>`, ()=>{
+    r.status='已关闭';
+    r.closedAt=stepNow();
+    pushChange(p,'关闭整改','仍打开','已关闭：'+r.title);
+    toast('已关闭整改');
+    render();
   });
 }
 function previewProjectFile(id, i){
