@@ -45,10 +45,7 @@ a:hover{text-decoration:underline}
 .breadcrumb .sep{color:var(--text-muted)}
 .breadcrumb .cur{color:var(--text)}
 .topbar-right{display:flex;align-items:center;gap:12px}
-.topbar-search{position:relative}
-.topbar-search input{width:180px;height:32px;padding:0 12px 0 32px;border:1px solid var(--border);border-radius:6px;background:var(--bg);font-size:13px}
-.topbar-search input:focus{outline:none;border-color:var(--primary);background:#fff;box-shadow:0 0 0 3px rgba(15,118,110,.15)}
-.topbar-search .ico{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text-muted);pointer-events:none}
+
 .avatar{display:flex;align-items:center;gap:8px;padding:4px 8px;border-radius:6px}
 .avatar:hover{background:var(--border-light)}
 .avatar .av{width:28px;height:28px;border-radius:50%;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600}
@@ -333,7 +330,6 @@ textarea.input{height:auto;min-height:88px;padding:10px 12px;resize:vertical;lin
   .sidebar{position:fixed;left:0;top:0;bottom:0;transform:translateX(-100%);box-shadow:var(--shadow-lg);visibility:hidden}
   .sidebar.open{transform:translateX(0);visibility:visible}
   .menu-toggle{display:flex}
-  .topbar-search{display:none}
   .content{padding:12px}
   .customer-table-wrap{display:none}
   .card-list{display:flex}
@@ -577,7 +573,6 @@ tr.step-locked td{color:var(--text-muted)}
       <button class="menu-toggle" onclick="openSidebar()" aria-label="打开菜单"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg></button>
       <div class="breadcrumb" id="breadcrumb"><span>住家研选</span><span class="sep">/</span><span class="cur">销售管理</span></div>
       <div class="topbar-right">
-        <div class="topbar-search"><svg class="ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg><input placeholder="搜索菜单" /></div>
         <div class="avatar"><div class="av">老</div><span style="font-size:13px">老板</span></div>
       </div>
     </header>
@@ -783,6 +778,7 @@ tr.step-locked td{color:var(--text-muted)}
     <li>规则设置去掉分发抽成和平台分成。项目详情不再显示抽成。内部提成仍在财务中心</li>
     <li>侧栏「规则设置」改为「系统设置」。规则和账号分成横向两个子页，账号地址是 #/accounts</li>
     <li>项目步骤双击一行展开操作记录。时间、操作人和这次做了什么都在里面，上传、完成、不适用和改计划日也会记上。没有记录时显示「还没有操作记录」</li>
+    <li>顶栏去掉「搜索菜单」。客户列表里的搜索还在</li>
     <li>邀约、到店先弹出确认：到店时间必填；到店还可以填接待方式和接待人。到店写进跟进记录，不再单独列出到店记录</li>
     <li>上传图纸先选类型和文件。一位客户只留一张，再传会换掉原来的。可以预览和删除</li>
     <li>今日待办左右分成未签约客户和已签约项目</li>
