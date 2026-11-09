@@ -561,7 +561,7 @@ tr.step-locked td{color:var(--text-muted)}
       <a class="nav-item" data-view="project" href="#/project"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>项目管理</a>
       <a class="nav-item" data-view="finance" href="#/finance"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>财务中心</a>
       <a class="nav-item" data-view="dealers" href="#/dealers"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l2-5h14l2 5M3 9h18v11a1 1 0 01-1 1H4a1 1 0 01-1-1z"/><path d="M9 21v-6h6v6M3 9a3 3 0 006 0 3 3 0 006 0 3 3 0 006 0"/></svg>合作伙伴</a>
-      <a class="nav-item" data-view="rules" href="#/rules"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>规则设置</a>
+      <a class="nav-item" data-view="rules" href="#/rules"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>系统设置</a>
     </nav>
   </aside>
   <div class="main">
@@ -773,6 +773,7 @@ tr.step-locked td{color:var(--text-muted)}
     <li>合作伙伴下增加工厂名录。拆单包从已录入且合作中的工厂里选，可做当前品类的排在前面。停用后不能再新选</li>
     <li>规则设置去掉 A、B、C 分级积分。销售列表不再显示积分。分级仍是 A、B、C 和未分级</li>
     <li>规则设置去掉分发抽成和平台分成。项目详情不再显示抽成。内部提成仍在财务中心</li>
+    <li>侧栏「规则设置」改为「系统设置」。规则和账号分成横向两个子页，账号地址是 #/accounts</li>
     <li>邀约、到店先弹出确认：到店时间必填；到店还可以填接待方式和接待人。到店写进跟进记录，不再单独列出到店记录</li>
     <li>上传图纸先选类型和文件。一位客户只留一张，再传会换掉原来的。可以预览和删除</li>
     <li>今日待办左右分成未签约客户和已签约项目</li>
@@ -933,8 +934,8 @@ function filtered(){
   });
   return list;
 }
-const VIEW_HASH={home:'#/home',actions:'#/actions',production:'#/production',list:'#/list',project:'#/project',finance:'#/finance',expenses:'#/expenses',commission:'#/commission',margin:'#/margin',dealers:'#/dealers',factories:'#/factories',rules:'#/rules'};
-const VIEW_NAME={home:'首页看板',actions:'待办动作',production:'生产协同',list:'销售管理',project:'项目管理',finance:'财务中心',expenses:'日常开支',commission:'内部提成',margin:'项目毛利',dealers:'合作伙伴',factories:'工厂',rules:'规则设置'};
+const VIEW_HASH={home:'#/home',actions:'#/actions',production:'#/production',list:'#/list',project:'#/project',finance:'#/finance',expenses:'#/expenses',commission:'#/commission',margin:'#/margin',dealers:'#/dealers',factories:'#/factories',rules:'#/rules',accounts:'#/accounts'};
+const VIEW_NAME={home:'首页看板',actions:'待办动作',production:'生产协同',list:'销售管理',project:'项目管理',finance:'财务中心',expenses:'日常开支',commission:'内部提成',margin:'项目毛利',dealers:'合作伙伴',factories:'工厂',rules:'系统设置',accounts:'账号'};
 function goList(){location.hash='#/list';if(location.hash==='#/list'){applyHash();render();}if(state.listScroll)requestAnimationFrame(()=>{const el=document.getElementById('content');if(el)el.scrollTop=state.listScroll});}
 function goDetail(id){if(document.getElementById('content'))state.listScroll=document.getElementById('content').scrollTop;location.hash='#/detail/'+id;}
 function goProject(id){location.hash='#/project/'+id;}
@@ -953,7 +954,7 @@ function applyHash(){
 window.addEventListener('hashchange',()=>{applyHash();render();});
 
 function render(){
-  const map={detail:renderDetail,list:renderList,home:renderHome,actions:renderActions,production:renderProduction,project:renderProjects,projectDetail:renderProjectDetail,finance:renderFinance,expenses:renderExpenses,commission:renderCommission,margin:renderMargin,dealers:renderDealers,factories:renderFactories,rules:renderRules};
+  const map={detail:renderDetail,list:renderList,home:renderHome,actions:renderActions,production:renderProduction,project:renderProjects,projectDetail:renderProjectDetail,finance:renderFinance,expenses:renderExpenses,commission:renderCommission,margin:renderMargin,dealers:renderDealers,factories:renderFactories,rules:renderRules,accounts:renderAccounts};
   (map[state.view]||renderList)();
   updateChrome();
 }
@@ -961,11 +962,12 @@ function updateChrome(){
   const bc=document.getElementById('breadcrumb');const tabs=document.getElementById('tabsBar');
   const financeChild=state.view==='expenses'||state.view==='commission'||state.view==='margin';
   const partnerChild=state.view==='factories';
-  const parent=state.view==='detail'?'list':(state.view==='projectDetail'||state.view==='actions'||state.view==='production')?'project':financeChild?'finance':partnerChild?'dealers':state.view;
+  const settingsChild=state.view==='accounts';
+  const parent=state.view==='detail'?'list':(state.view==='projectDetail'||state.view==='actions'||state.view==='production')?'project':financeChild?'finance':partnerChild?'dealers':settingsChild?'rules':state.view;
   const parentName=VIEW_NAME[parent]||'销售管理';
   const cur=state.view==='detail'?'客户详情':state.view==='projectDetail'?'项目详情':state.view==='actions'?'待办动作':state.view==='production'?'生产协同':VIEW_NAME[state.view]||parentName;
-  if(state.view==='detail'||state.view==='projectDetail'||state.view==='actions'||state.view==='production'||financeChild||partnerChild){
-    const closeTo=(state.view==='actions'||state.view==='production')?'project':financeChild?'finance':partnerChild?'dealers':parent;
+  if(state.view==='detail'||state.view==='projectDetail'||state.view==='actions'||state.view==='production'||financeChild||partnerChild||settingsChild){
+    const closeTo=(state.view==='actions'||state.view==='production')?'project':financeChild?'finance':partnerChild?'dealers':settingsChild?'rules':parent;
     bc.innerHTML=`<span>住家研选</span><span class="sep">/</span><a href="${VIEW_HASH[parent]}" onclick="goView('${parent}');return false">${parentName}</a><span class="sep">/</span><span class="cur">${cur}</span>`;
     tabs.innerHTML=`<div class="tab" onclick="goView('home')">首页看板</div><div class="tab" onclick="goView('${parent}')">${parentName}</div><div class="tab active">${cur} <span class="x" onclick="event.stopPropagation();goView('${closeTo}')">${iconClose()}</span></div>`;
   } else {
@@ -974,7 +976,7 @@ function updateChrome(){
   }
   document.querySelectorAll('.nav-item').forEach(a=>{
     const v=a.dataset.view;
-    a.classList.toggle('active', v===state.view || (state.view==='detail'&&v==='list') || ((state.view==='projectDetail'||state.view==='actions'||state.view==='production')&&v==='project') || ((state.view==='expenses'||state.view==='commission'||state.view==='margin')&&v==='finance') || (state.view==='factories'&&v==='dealers'));
+    a.classList.toggle('active', v===state.view || (state.view==='detail'&&v==='list') || ((state.view==='projectDetail'||state.view==='actions'||state.view==='production')&&v==='project') || ((state.view==='expenses'||state.view==='commission'||state.view==='margin')&&v==='finance') || (state.view==='factories'&&v==='dealers') || (state.view==='accounts'&&v==='rules'));
   });
 }
 function renderList(){

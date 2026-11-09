@@ -80,18 +80,18 @@ let RULES = [
   {name:'步骤停滞天数', value:'3', enabled:true}
 ];
 let ACCOUNTS = [
-  {account:'admin', name:'老板', role:'负责人', status:'已开通', modules:'首页看板、销售管理、项目管理、财务中心、规则设置', locked:true},
+  {account:'admin', name:'老板', role:'负责人', status:'已开通', modules:'首页看板、销售管理、项目管理、财务中心、系统设置', locked:true},
   {account:'design', name:'设计小王', role:'设计师', status:'已开通', modules:'首页看板、项目管理'},
   {account:'yanxuan-accept-assist', name:'助理小邓', role:'助理', status:'已开通', modules:'首页看板、销售管理、项目管理'},
   {account:'yanxuan-accept-design', name:'设计老张', role:'设计师', status:'已开通', modules:'首页看板、销售管理、项目管理'},
-  {account:'yanxuan-accept-finance', name:'财务小刘', role:'财务', status:'已开通', modules:'首页看板、销售管理、项目管理、财务中心、规则设置'},
+  {account:'yanxuan-accept-finance', name:'财务小刘', role:'财务', status:'已开通', modules:'首页看板、销售管理、项目管理、财务中心、系统设置'},
   {account:'yanxuan-accept-install', name:'安装师傅老赵', role:'安装队', status:'已开通', modules:'首页看板、项目管理'},
-  {account:'yanxuan-accept-off', name:'停用账号', role:'销售', status:'未开通', modules:'首页看板、销售管理、项目管理、财务中心、规则设置'},
+  {account:'yanxuan-accept-off', name:'停用账号', role:'销售', status:'未开通', modules:'首页看板、销售管理、项目管理、财务中心、系统设置'},
   {account:'yanxuan-accept-pm', name:'项目经理小张', role:'项目经理', status:'已开通', modules:'首页看板、销售管理、项目管理、财务中心'},
   {account:'yanxuan-accept-sales', name:'销售小李', role:'销售', status:'已开通', modules:'首页看板、销售管理、项目管理、财务中心'}
 ];
-const MODULE_OPTIONS = ['首页看板','销售管理','项目管理','财务中心','合作伙伴','规则设置'];
-const ROLE_MODULES = {负责人:MODULE_OPTIONS, 设计师:['首页看板','项目管理'], 助理:['首页看板','销售管理','项目管理'], 财务:['首页看板','销售管理','项目管理','财务中心','规则设置'], 安装队:['首页看板','项目管理'], 销售:['首页看板','销售管理','项目管理','财务中心','合作伙伴'], 项目经理:['首页看板','销售管理','项目管理','财务中心']};
+const MODULE_OPTIONS = ['首页看板','销售管理','项目管理','财务中心','合作伙伴','系统设置'];
+const ROLE_MODULES = {负责人:MODULE_OPTIONS, 设计师:['首页看板','项目管理'], 助理:['首页看板','销售管理','项目管理'], 财务:['首页看板','销售管理','项目管理','财务中心','系统设置'], 安装队:['首页看板','项目管理'], 销售:['首页看板','销售管理','项目管理','财务中心','合作伙伴'], 项目经理:['首页看板','销售管理','项目管理','财务中心']};
 
 function money(n){return Number(n||0).toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function ruleValue(name, fallback){const r=RULES.find(x=>x.name===name);if(!r||!r.enabled)return fallback;const n=Number(r.value);return Number.isFinite(n)?n:fallback;}
@@ -1388,14 +1388,24 @@ function shareRows(title, rows){
   return `<div class="panel"><div class="panel-hd"><h3>${esc(title)}</h3><span class="meta">共 ${rows.reduce((s,r)=>s+r.n,0)}</span></div><div style="padding:4px 16px 12px">${bars||'<div class="empty-inline">暂无</div>'}</div></div>`;
 }
 
+function settingsSubnav(active){
+  const tabs=[['rules','规则'],['accounts','账号']];
+  return `<div class="submod">${tabs.map(([view,label])=>`<button type="button" class="${active===view?'active':''}" onclick="goView('${view}')">${label}</button>`).join('')}</div>`;
+}
 function renderRules(){
   pageShell(`
-    <div class="page-head"><div><h1>规则设置</h1><p>当前岗位 负责人。财务只能看。修改必须填原因。停用后这条规则不再参与计算。</p></div></div>
+    <div class="page-head"><div><h1>规则</h1><p>当前岗位 负责人。财务只能看。修改必须填原因。停用后这条规则不再参与计算。</p></div></div>
+    ${settingsSubnav('rules')}
     <div class="table-wrap"><table class="data"><thead><tr><th>规则</th><th>当前值</th><th class="col-ops">操作</th></tr></thead><tbody>
       ${RULES.map((r,i)=>`<tr class="${r.enabled?'':'rule-off'}"><td>${esc(r.name)}</td><td>${esc(r.value)}${r.enabled?'':' · 已停用'}</td><td><div class="ops"><button class="btn btn-sm btn-default" onclick="editRule(${i})">编辑</button><button class="btn btn-sm btn-default" onclick="toggleRule(${i})">${r.enabled?'停用':'启用'}</button></div></td></tr>`).join('')}
     </tbody></table></div>
-    <div class="block-title">账号 <button class="btn btn-primary btn-sm" onclick="editAccount(-1)">新增账号</button></div>
-    <p class="page-note">点编辑可以改姓名、密码和能进入的板块。密码留空表示不改。推荐板块按岗位给出，可以再改。没勾的菜单不出现。负责人始终是全部板块。</p>
+  `);
+}
+function renderAccounts(){
+  pageShell(`
+    <div class="page-head"><div><h1>账号</h1><p>点编辑可以改姓名、密码和能进入的板块。密码留空表示不改。推荐板块按岗位给出，可以再改。没勾的菜单不出现。负责人始终是全部板块。</p></div>
+      <button class="btn btn-primary" onclick="editAccount(-1)">新增账号</button></div>
+    ${settingsSubnav('accounts')}
     <div class="table-wrap"><table class="data"><thead><tr><th>账号</th><th>姓名</th><th>岗位</th><th>状态</th><th>板块</th><th class="col-ops">操作</th></tr></thead><tbody>
       ${ACCOUNTS.map((a,i)=>`<tr><td>${esc(a.account)}</td><td>${esc(a.name)}</td><td>${esc(a.role)}</td><td>${esc(a.status)}</td><td>${esc(a.modules)}</td><td><div class="ops"><button class="btn btn-sm btn-default" onclick="editAccount(${i})">编辑</button>${a.locked?'':`<button class="btn btn-sm btn-default" onclick="deleteAccount(${i})">删除</button>`}</div></td></tr>`).join('')}
     </tbody></table></div>
