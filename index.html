@@ -542,6 +542,14 @@ tr.step-now.row-hot td:first-child{box-shadow:inset 3px 0 0 var(--danger)}
 tr.step-locked td{color:var(--text-muted)}
 .banner-lost{background:#fef2f2;border:1px solid #fecaca;color:#991b1b;border-radius:8px;padding:12px 14px;margin:0 0 14px;font-size:13px;line-height:1.6}
 .step-ops{display:flex;flex-wrap:wrap;gap:6px}
+.step-exp{width:36px;padding-left:8px;padding-right:0}
+.step-exp button{border:none;background:none;cursor:pointer;color:var(--text-muted);padding:2px;line-height:0}
+.step-exp button.open{color:var(--primary)}
+.step-log td{background:#FAFAF9;padding:8px 16px 10px 44px}
+.act{display:grid;grid-template-columns:168px 88px minmax(0,1fr);gap:12px;padding:6px 0;font-size:13px;line-height:1.5;border-bottom:1px solid var(--border)}
+.act:last-child{border-bottom:none}
+.act .who{color:var(--text-secondary)}
+@media(max-width:720px){.act{grid-template-columns:1fr;gap:2px}}
 .rule-off{opacity:.45}
 .margin-bad{color:var(--danger);font-weight:600}
 .margin-warn{color:var(--warning);font-weight:600}
@@ -774,6 +782,7 @@ tr.step-locked td{color:var(--text-muted)}
     <li>规则设置去掉 A、B、C 分级积分。销售列表不再显示积分。分级仍是 A、B、C 和未分级</li>
     <li>规则设置去掉分发抽成和平台分成。项目详情不再显示抽成。内部提成仍在财务中心</li>
     <li>侧栏「规则设置」改为「系统设置」。规则和账号分成横向两个子页，账号地址是 #/accounts</li>
+    <li>项目步骤双击一行展开操作记录。时间、操作人和这次做了什么都在里面，上传、完成、不适用和改计划日也会记上。没有记录时显示「还没有操作记录」</li>
     <li>邀约、到店先弹出确认：到店时间必填；到店还可以填接待方式和接待人。到店写进跟进记录，不再单独列出到店记录</li>
     <li>上传图纸先选类型和文件。一位客户只留一张，再传会换掉原来的。可以预览和删除</li>
     <li>今日待办左右分成未签约客户和已签约项目</li>
@@ -823,7 +832,7 @@ let customers = [
   {id:'KH-2026-009',name:'冯雪',phone:'13800001009',wechat:'wx_fengxue',city:'苏州',source:'线下',channel:'自然到店/来电',intent:'B',status:'已成交',owner:'老板',serviceType:'自营',dealers:[],distributeReason:'',nextFollow:null,lastFollow:'2026-11-02 09:30',contactNote:'已通话 · 已加微信',hasDrawing:true,drawing:{slot:'户型图',name:'冯雪-户型图.jpg',type:'image/jpeg',url:''},reception:5,follows:[{method:'到店',content:'到店确认平面后签约。',time:'2026-10-20 11:00',author:'老板',next:null}],projects:[]},
   {id:'KH-2026-010',name:'韩磊',phone:'13800001010',wechat:'wx_hanlei',city:'昆明',source:'线上',channel:'抖音直播',intent:'C',status:'新线索',owner:'小李',serviceType:'分发',dealers:['昆明暖居'],distributeReason:'超出服务半径',nextFollow:'2026-11-06 18:00',lastFollow:null,contactNote:'',hasDrawing:false,reception:1,follows:[],projects:[]}
 ];
-let state = {view:'list',detailId:null,projectId:null,filterTab:'全部',search:'',intentFilter:'',sourceFilter:'',stageFilter:'',sortKey:'nextFollow',sortDir:'asc',followTargetId:null,batchStep:1,listScroll:0,todayFilter:'全部',actionFilter:'全部',showEnded:false,dealerQ:'',factoryQ:'',prodFilter:'全部',prodFactory:'',prodStatus:'全部',prodOpen:false};
+let state = {view:'list',detailId:null,projectId:null,filterTab:'全部',search:'',intentFilter:'',sourceFilter:'',stageFilter:'',sortKey:'nextFollow',sortDir:'asc',followTargetId:null,batchStep:1,listScroll:0,todayFilter:'全部',actionFilter:'全部',showEnded:false,dealerQ:'',factoryQ:'',prodFilter:'全部',prodFactory:'',prodStatus:'全部',prodOpen:false,stepOpen:{}};
 customers.forEach(c=>{
   if(c.status==='已成交') c.boardStage='已成交';
   else if(c.status==='已流失') c.boardStage='流失';

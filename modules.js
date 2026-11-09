@@ -341,7 +341,8 @@ function syncProject(p){
   while(guard++<5){
     const cur=currentStep(p);
     if(!cur||cur.seq!==2) break;
-    cur.status='已完成';cur.by='系统';cur.at=cur.at||(TODAY+' 09:27');cur.note=cur.note||'系统已生成项目';
+    cur.status='已完成';cur.by='系统';cur.at=cur.at||stepNow();cur.note=cur.note||'系统已生成项目';
+    if(!(cur.acts||[]).some(a=>a.action==='完成')) pushAct(cur,'完成',cur.note,'系统',cur.at);
   }
   p.progress=progressText(p);
   if(p.lost){p.stage='流失';p.action=null;return;}
@@ -360,8 +361,55 @@ function seedSteps(doneUntil, extras){
     const extra=extras[d.seq]||{};
     const status=extra.status||(d.seq<=doneUntil?'已完成':'未开始');
     const closed=status==='已完成'||status==='不适用';
-    return {seq:d.seq, status, plan:extra.plan||'', reason:extra.reason||'', by:closed?(extra.by||'老板'):'', at:closed?(extra.at||'2026-10-15 11:00'):'', note:extra.note||''};
+    const at=closed?(extra.at||'2026-10-15 11:00'):'';
+    const by=closed?(extra.by||(d.auto?'系统':'老板')):'';
+    const note=extra.note||'';
+    const reason=extra.reason||'';
+    const acts=(extra.acts||[]).slice();
+    if(closed&&!acts.some(a=>a.action==='完成'||a.action==='不适用')){
+      acts.push(status==='不适用'
+        ?{at, by, action:'不适用', detail:reason}
+        :{at, by, action:'完成', detail:note||(d.auto?'系统已生成项目':'')});
+    }
+    return {seq:d.seq, status, plan:extra.plan||'', reason, by, at, note, acts};
   });
+}
+function pushAct(step, action, detail, by, at){
+  if(!step) return;
+  step.acts=step.acts||[];
+  step.acts.push({at:at||stepNow(), by:by||'老板', action, detail:detail||''});
+}
+function sortStepActs(step){
+  const rank=a=>a.action==='上传'?0:a.action==='删除'?1:(a.action==='完成'||a.action==='不适用')?3:2;
+  step.acts=(step.acts||[]).slice().sort((a,b)=>String(a.at).localeCompare(String(b.at))||rank(a)-rank(b));
+}
+function attachFileActs(p){
+  (p.files||[]).forEach(f=>{
+    const s=(p.steps||[]).find(x=>x.seq===f.seq);
+    if(!s) return;
+    s.acts=s.acts||[];
+    const detail=[f.slot, f.name, f.amount?money(f.amount):'', f.remark].filter(Boolean).join(' ');
+    if(s.acts.some(a=>a.action==='上传'&&a.at===f.at&&a.detail===detail)) return;
+    s.acts.push({at:f.at, by:f.by||'老板', action:'上传', detail});
+  });
+  (p.steps||[]).forEach(sortStepActs);
+}
+function toggleStepLog(id, seq){
+  const key=id+':'+seq;
+  state.stepOpen[key]=!state.stepOpen[key];
+  render();
+}
+function stepExpCell(p, step){
+  const open=!!state.stepOpen[p.id+':'+step.seq];
+  return `<td class="step-exp"><button type="button" class="${open?'open':''}" aria-label="操作记录" onclick="event.stopPropagation();toggleStepLog('${p.id}',${step.seq})"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="${open?'M6 9l6 6 6-6':'M9 6l6 6-6 6'}"/></svg></button></td>`;
+}
+function stepLogRow(p, step){
+  if(!state.stepOpen[p.id+':'+step.seq]) return '';
+  const acts=step.acts||[];
+  const body=acts.length
+    ?acts.map(a=>`<div class="act"><span>${esc(a.at||'—')}</span><span class="who">${esc(a.by||'未记录')}</span><span>${esc([a.action,a.detail].filter(Boolean).join(' '))}</span></div>`).join('')
+    :'<div class="empty-inline">还没有操作记录</div>';
+  return `<tr class="step-log"><td colspan="8">${body}</td></tr>`;
 }
 function pushChange(p, what, from, to){
   p.changes=p.changes||[];
@@ -369,10 +417,12 @@ function pushChange(p, what, from, to){
 }
 function findProject(id){return CONTRACTS.find(x=>x.id===id);}
 function markDone(p, step, by, note){
+  const at=stepNow();
   step.status='已完成';
   step.by=by||'老板';
-  step.at=stepNow();
+  step.at=at;
   step.note=note||'';
+  pushAct(step,'完成',note||'',step.by,at);
   if(step.seq===18) p.amount=Number(p.quoteAmount)||0;
   refreshDue(p);
   syncProject(p);
@@ -682,15 +732,15 @@ function renderProjectDetail(){
       ${stats.map(g=>`<button type="button" class="group-chip ${state.stepGroup===g.name?'on':''}" onclick="state.stepGroup='${g.name}';render()">${g.name} <b>${g.done}/${g.total}</b></button>`).join('')}
     </div>
     <p class="page-note">${esc(p.progress)}</p>
-    <p class="page-note">步骤按顺序往下走。只有当前这一步能上传、完成或标不适用。没有上传按钮就不用文件。有上传按钮时，缺的文件传齐才能点完成。计划日可以改，预埋改的是到场日。日期过了还没做完，会写超了几天，并出现在首页看板。客户确认平面、客户确认立面要填确认方式；最终报价要填金额；客户签字后按合同金额生成应收；收全款要等未收结清；安排安装要填日期、天数和现场电话。</p>
-    <div class="table-wrap"><table class="data"><thead><tr><th>步骤</th><th>分组</th><th>岗位</th><th>状态</th><th>计划</th><th>说明</th><th class="col-ops">操作</th></tr></thead><tbody>
+    <p class="page-note">步骤按顺序往下走。只有当前这一步能上传、完成或标不适用。没有上传按钮就不用文件。有上传按钮时，缺的文件传齐才能点完成。计划日可以改，预埋改的是到场日。日期过了还没做完，会写超了几天，并出现在首页看板。客户确认平面、客户确认立面要填确认方式；最终报价要填金额；客户签字后按合同金额生成应收；收全款要等未收结清；安排安装要填日期、天数和现场电话。双击一行查看操作人和时间，上传也记在里面。</p>
+    <div class="table-wrap"><table class="data"><thead><tr><th class="step-exp"></th><th>步骤</th><th>分组</th><th>岗位</th><th>状态</th><th>计划</th><th>说明</th><th class="col-ops">操作</th></tr></thead><tbody>
       ${rows.map(s=>{
         const def=stepDef(s.seq);
         const latePlan=cur&&s.seq===cur.seq&&s.plan&&s.plan<TODAY;
         const cls=(cur&&s.seq===cur.seq?'step-now':'')+(s.status==='未开始'&&!(cur&&s.seq===cur.seq)?' step-locked':'')+(latePlan?' row-hot':'');
         const plan=s.plan?(s.plan+(s.status==='未开始'&&s.plan<TODAY?' · 超了 '+Math.round((new Date(TODAY)-new Date(s.plan))/86400000)+' 天':'')):'—';
         const status=s.status==='未开始'&&cur&&s.seq===cur.seq?'进行中':s.status;
-        return `<tr class="${cls}"><td>${s.seq}. ${esc(def.name)}</td><td>${esc(def.group)}</td><td>${esc(def.role)}</td><td>${esc(status)}</td><td>${esc(plan)}</td><td>${esc(explainStep(p,s,cur))}</td><td>${stepOps(p,s)}</td></tr>`;
+        return `<tr class="${cls}" ondblclick="if(event.target.closest('button,a,input,select,textarea,label'))return;toggleStepLog('${p.id}',${s.seq})">${stepExpCell(p,s)}<td>${s.seq}. ${esc(def.name)}</td><td>${esc(def.group)}</td><td>${esc(def.role)}</td><td>${esc(status)}</td><td>${esc(plan)}</td><td>${esc(explainStep(p,s,cur))}</td><td>${stepOps(p,s)}</td></tr>${stepLogRow(p,s)}`;
       }).join('')}
     </tbody></table></div>
     <div class="section"><div class="section-title">报价和资料</div>
@@ -786,9 +836,11 @@ function submitStepFile(id){
   p.files=p.files||[];
   const prev=p.files.find(f=>f.seq===step.seq&&f.slot===slot);
   if(prev&&prev.url) URL.revokeObjectURL(prev.url);
-  const rec={seq:step.seq, slot, name:file.name, type:file.type||'', url:URL.createObjectURL(file), at:stepNow(), by:'老板', remark, amount:prev&&prev.amount?prev.amount:amount};
+  const at=stepNow();
+  const rec={seq:step.seq, slot, name:file.name, type:file.type||'', url:URL.createObjectURL(file), at, by:'老板', remark, amount:prev&&prev.amount?prev.amount:amount};
   if(prev) Object.assign(prev, rec);
   else p.files.push(rec);
+  pushAct(step,'上传',[slot, file.name, amount?money(amount):'', remark].filter(Boolean).join(' '),'老板',at);
   if(!prev&&amount>0){
     LEDGER.unshift({kind:'项目收款', dir:'收款', amount, subject:'定金', cost:false, date:TODAY, due:'', project:p.id, customer:'', unpaid:false});
     refreshDue(p);
@@ -849,7 +901,11 @@ function openConfirmFinish(p, step){
     const link=document.getElementById('cfLink').value.trim();
     if(method==='微信'&&!file&&!link){fieldError('cfTraceGroup');ok=false;}
     if(!ok) return false;
-    if(file) p.files.push({seq:step.seq, slot:'确认留痕', name:file.name, type:file.type||'', url:URL.createObjectURL(file), at:stepNow(), by:'老板', remark:link, amount:0});
+    if(file){
+      const at=stepNow();
+      p.files.push({seq:step.seq, slot:'确认留痕', name:file.name, type:file.type||'', url:URL.createObjectURL(file), at, by:'老板', remark:link, amount:0});
+      pushAct(step,'上传',['确认留痕', file.name, link].filter(Boolean).join(' '),'老板',at);
+    }
     markDone(p, step, '老板', method+' · '+date+(link?' · '+link:''));
     pushChange(p,'完成步骤','未开始', def.name+' '+method);
     toast('已完成，进入下一步');
@@ -914,7 +970,9 @@ function openNa(id){
     const reason=document.getElementById('naReason').value.trim();
     clearField('naGroup');
     if(!reason){fieldError('naGroup','请填写原因');return false;}
-    step.status='不适用';step.reason=reason;step.by='老板';step.at=stepNow();
+    const at=stepNow();
+    step.status='不适用';step.reason=reason;step.by='老板';step.at=at;
+    pushAct(step,'不适用',reason,'老板',at);
     syncProject(p);
     pushChange(p,'不适用','未开始', def.name+'：'+reason);
     toast('已标为不适用');
@@ -934,6 +992,8 @@ function openPlan(id){
     const v=document.getElementById('planDate').value;
     const prev=step.plan||'未填';
     step.plan=v;
+    const at=stepNow();
+    pushAct(step,'修改'+label, prev+' → '+(v||'未填'),'老板',at);
     pushChange(p,'修改'+label, prev, v||'未填');
     syncProject(p);
     toast(v?'已改'+label:'已清掉'+label);
@@ -981,8 +1041,10 @@ function openReconfirm(id){
     clearField('rcGroup');
     if(!reason){fieldError('rcGroup','请填写原因');return false;}
     const signed=p.steps.some(s=>s.seq===18&&s.status==='已完成');
+    const at=stepNow();
     p.steps.forEach(s=>{
       if(s.seq>=18&&(s.status==='已完成'||s.status==='不适用')){
+        pushAct(s,'重新确认',reason,'老板',at);
         s.status='未开始';s.reason='';s.by='';s.at='';s.note='';
       }
     });
@@ -1120,6 +1182,7 @@ function deleteProjectFile(id, i){
   if(p.lost||(st&&(st.status==='已完成'||st.status==='不适用'))){toast('这一步已经结束，文件不能删');return;}
   openModule('删除文件', `<p style="margin:0">删除「${esc(f.name)}」？</p>`, ()=>{
     if(f.url) URL.revokeObjectURL(f.url);
+    if(st) pushAct(st,'删除',[f.slot, f.name].filter(Boolean).join(' '),'老板');
     p.files.splice(i,1);
     syncProject(p);
     toast('已删除');
@@ -1626,7 +1689,7 @@ function hydrateProjects(){
     3:{at:'2026-11-05 09:27', by:'设计老张'},
     4:{at:'2026-11-05 09:28', by:'助理小邓'},
     5:{at:'2026-11-05 09:28', by:'设计老张'},
-    7:{plan:'2026-11-12'},
+    7:{plan:'2026-11-12', acts:[{at:'2026-11-05 10:02', by:'设计老张', action:'修改计划日', detail:'未填 → 2026-11-12'}]},
     9:{plan:'2026-11-10'},
     11:{plan:'2026-11-10'}
   });
@@ -1641,6 +1704,7 @@ function hydrateProjects(){
   const byName={};
   FACTORIES.forEach(f=>{byName[f.name]=f.id;});
   CONTRACTS.forEach(p=>(p.factories||[]).forEach(x=>{if(!x.factoryId && byName[x.name]) x.factoryId=byName[x.name];}));
+  CONTRACTS.forEach(attachFileActs);
   CONTRACTS.forEach(syncProject);
 }
 hydrateProjects();
