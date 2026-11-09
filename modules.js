@@ -72,10 +72,6 @@ let COMMISSIONS = [
   {kind:'销售提成', owner:'销售小李', project:'HT-202611-001', base:100000, rate:2, amount:2000, due:'2026-10-30', status:'已发'}
 ];
 let RULES = [
-  {name:'10万以内分发抽成比例', value:'2.50', enabled:true},
-  {name:'超过10万的分发抽成比例', value:'3.00', enabled:true},
-  {name:'分发抽成分档线', value:'100000.00', enabled:true},
-  {name:'平台分成比例', value:'20.00', enabled:true},
   {name:'毛利率偏高线', value:'55.00', enabled:true},
   {name:'毛利率偏低线', value:'25.00', enabled:true},
   {name:'确认平面天数', value:'7', enabled:true},
@@ -679,7 +675,6 @@ function renderProjectDetail(){
       <div class="info-item"><label>成本</label><div class="val">${money(cost)}</div></div>
       <div class="info-item"><label>毛利</label><div class="val">${money(profit)}</div></div>
       <div class="info-item"><label>毛利率</label><div class="val">${rate.toFixed(2)}%</div></div>
-      <div class="info-item"><label>抽成</label><div class="val">${money(0)}</div></div>
     </div>
     ${receivableSection(p)}
     <div class="group-chips">
@@ -1395,7 +1390,7 @@ function shareRows(title, rows){
 
 function renderRules(){
   pageShell(`
-    <div class="page-head"><div><h1>规则设置</h1><p>当前岗位 负责人。财务只能看。修改必须填原因。停用后这条规则不再参与计算，已写下的抽成不会改写。</p></div></div>
+    <div class="page-head"><div><h1>规则设置</h1><p>当前岗位 负责人。财务只能看。修改必须填原因。停用后这条规则不再参与计算。</p></div></div>
     <div class="table-wrap"><table class="data"><thead><tr><th>规则</th><th>当前值</th><th class="col-ops">操作</th></tr></thead><tbody>
       ${RULES.map((r,i)=>`<tr class="${r.enabled?'':'rule-off'}"><td>${esc(r.name)}</td><td>${esc(r.value)}${r.enabled?'':' · 已停用'}</td><td><div class="ops"><button class="btn btn-sm btn-default" onclick="editRule(${i})">编辑</button><button class="btn btn-sm btn-default" onclick="toggleRule(${i})">${r.enabled?'停用':'启用'}</button></div></td></tr>`).join('')}
     </tbody></table></div>
