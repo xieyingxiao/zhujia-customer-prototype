@@ -1606,20 +1606,36 @@ function deleteDealer(id){
   });
 }
 
-function renderFactories(){
+function factoryView(){
   const q=(state.factoryQ||'').trim();
   const list=FACTORIES.filter(f=>!q||[f.name,f.city,f.contact,f.phone,(f.kinds||[]).join('')].some(v=>String(v||'').includes(q)));
   const rows=list.map(f=>{
     const used=factoryPacks(f);
     return `<tr class="${f.active?'':'rule-off'}"><td><strong>${esc(f.name)}</strong><div style="font-size:12px;color:var(--text-muted)">${esc(f.id)}</div></td><td>${esc(f.city)}</td><td>${esc((f.kinds||[]).join('、')||'—')}</td><td>${esc(f.contact||'—')}</td><td>${f.phone?fmtPhone(f.phone):'—'}</td><td title="${esc(used.map(x=>x.project.id+' '+x.pack.content).join('、'))}">${used.length}</td><td>${f.active?'<span class="badge badge-stage-done">合作中</span>':'<span class="badge badge-intent-none">已停用</span>'}</td><td class="col-ops"><div class="ops"><button class="btn btn-sm btn-default" onclick="openPlant('${f.id}')">编辑</button><button class="btn btn-sm btn-default" onclick="togglePlant('${f.id}')">${f.active?'停用':'启用'}</button><button class="btn btn-sm btn-danger" onclick="deletePlant('${f.id}')">删除</button></div></td></tr>`;
   }).join('');
+  return {q, list, html:rows||`<tr><td colspan="8">${q?'没有匹配的工厂':'还没有工厂，点「添加工厂」建第一家。'}</td></tr>`};
+}
+function onFactoryQ(el, ev){
+  state.factoryQ=el.value;
+  if(el.dataset.composing==='1' || (ev&&ev.isComposing)) return;
+  const box=el.closest('.search-box');
+  if(box) box.classList.toggle('has-value', !!state.factoryQ);
+  const body=document.getElementById('factoryRows');
+  const note=document.getElementById('factoryCount');
+  if(!body||!note){render();return;}
+  const view=factoryView();
+  body.innerHTML=view.html;
+  note.textContent='共 '+view.list.length+' 家。拆包时，可做当前品类的工厂排在前面。';
+}
+function renderFactories(){
+  const view=factoryView();
   pageShell(`
     <div class="page-head"><div><h1>工厂</h1><p>拆单包时从这里选。停用后不能再新选，已经拆出去的包仍保留这家名字。</p></div>
       <button class="btn btn-primary" onclick="openPlant()">添加工厂</button></div>
     ${partnerSubnav('factories')}
-    <div class="toolbar"><div class="toolbar-right" style="margin-left:0"><div class="search-box ${q?'has-value':''}"><svg class="ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg><input placeholder="名称、城市、品类、联系人或电话" value="${esc(q)}" oninput="state.factoryQ=this.value;render()" /><button class="clear" onclick="state.factoryQ='';render()" aria-label="清除">${iconClose()}</button></div></div></div>
-    <div class="table-wrap"><table class="data"><thead><tr><th>名称</th><th>城市</th><th>可做品类</th><th>联系人</th><th>电话</th><th>已拆包</th><th>状态</th><th class="col-ops">操作</th></tr></thead><tbody>${rows||`<tr><td colspan="8">${q?'没有匹配的工厂':'还没有工厂，点「添加工厂」建第一家。'}</td></tr>`}</tbody></table></div>
-    <p class="page-note" style="margin-top:12px">共 ${list.length} 家。拆包时，可做当前品类的工厂排在前面。</p>
+    <div class="toolbar"><div class="toolbar-right" style="margin-left:0"><div class="search-box ${view.q?'has-value':''}"><svg class="ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg><input id="factoryQ" placeholder="名称、城市、品类、联系人或电话" value="${esc(view.q)}" oncompositionstart="this.dataset.composing='1'" oncompositionend="this.dataset.composing='';onFactoryQ(this)" oninput="onFactoryQ(this,event)" /><button class="clear" onclick="state.factoryQ='';render()" aria-label="清除">${iconClose()}</button></div></div></div>
+    <div class="table-wrap"><table class="data"><thead><tr><th>名称</th><th>城市</th><th>可做品类</th><th>联系人</th><th>电话</th><th>已拆包</th><th>状态</th><th class="col-ops">操作</th></tr></thead><tbody id="factoryRows">${view.html}</tbody></table></div>
+    <p class="page-note" id="factoryCount" style="margin-top:12px">共 ${view.list.length} 家。拆包时，可做当前品类的工厂排在前面。</p>
   `);
 }
 function openPlant(id){
