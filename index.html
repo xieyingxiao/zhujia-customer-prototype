@@ -37,6 +37,16 @@ a:hover{text-decoration:underline}
 .nav-item.active{background:var(--primary-light);color:var(--primary-active);font-weight:500}
 .nav-item svg{width:16px;height:16px;flex-shrink:0;opacity:.7}
 .nav-item.active svg{opacity:1}
+.nav-parent{width:100%;border:none;background:none;font:inherit;cursor:pointer;text-align:left}
+.nav-caret{margin-left:auto;width:14px;height:14px;opacity:.6;transition:transform .15s}
+.nav-fold.open .nav-caret{transform:rotate(90deg)}
+.nav-parent.on{color:var(--primary-active);font-weight:500}
+.nav-parent.on svg{opacity:1}
+.nav-sub{display:none;margin:0 0 6px 18px;padding-left:8px;border-left:1px solid var(--border)}
+.nav-fold.open .nav-sub{display:block}
+.nav-subitem{display:block;padding:7px 12px;border-radius:6px;color:var(--text-secondary);font-size:13px;margin-bottom:2px}
+.nav-subitem:hover{background:var(--border-light);color:var(--text)}
+.nav-subitem.active{background:var(--primary-light);color:var(--primary-active);font-weight:500}
 .main{flex:1;display:flex;flex-direction:column;min-width:0}
 .topbar{background:#fff;border-bottom:1px solid var(--border);padding:0 20px;height:52px;display:flex;align-items:center;gap:16px;flex-shrink:0}
 .menu-toggle{display:none;width:36px;height:36px;border-radius:6px;align-items:center;justify-content:center;color:var(--text-secondary)}
@@ -562,7 +572,14 @@ tr.step-locked td{color:var(--text-muted)}
       <div class="nav-group-title">住家研选</div>
       <a class="nav-item" data-view="home" href="#/home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10.5L12 3l9 7.5V21a1 1 0 01-1 1h-5v-7H9v7H4a1 1 0 01-1-1z"/></svg>首页看板</a>
       <a class="nav-item" data-view="list" href="#/list"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>销售管理</a>
-      <a class="nav-item" data-view="project" href="#/project"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>项目管理</a>
+      <div class="nav-fold open" data-group="project">
+        <button type="button" class="nav-item nav-parent" data-view="project" onclick="toggleNavFold(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>项目管理<svg class="nav-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg></button>
+        <div class="nav-sub">
+          <a class="nav-subitem" data-view="project" href="#/project">项目</a>
+          <a class="nav-subitem" data-view="actions" href="#/actions">待办动作</a>
+          <a class="nav-subitem" data-view="production" href="#/production">生产协同</a>
+        </div>
+      </div>
       <a class="nav-item" data-view="finance" href="#/finance"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>财务中心</a>
       <a class="nav-item" data-view="dealers" href="#/dealers"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l2-5h14l2 5M3 9h18v11a1 1 0 01-1 1H4a1 1 0 01-1-1z"/><path d="M9 21v-6h6v6M3 9a3 3 0 006 0 3 3 0 006 0 3 3 0 006 0"/></svg>合作伙伴</a>
       <a class="nav-item" data-view="rules" href="#/rules"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>系统设置</a>
@@ -784,6 +801,7 @@ tr.step-locked td{color:var(--text-muted)}
     <li>待处理只算约定时间已经过了、还没做完。已签约项目只显示这种超时数据，计划还没到的不放进来</li>
     <li>还没首触的未签约客户也算待处理。同一个人只占一行，说明里同时写没首触和跟进已过期</li>
     <li>跟进方式选到店时，邀约到店和到店接待一起完成。已经走到预报价的不退回</li>
+    <li>项目管理在侧栏展开为项目、待办动作、生产协同。页内不再横排这三个切换</li>
     <li>邀约、到店先弹出确认：到店时间必填；到店还可以填接待方式和接待人。到店写进跟进记录，不再单独列出到店记录</li>
     <li>上传图纸先选类型和文件。一位客户只留一张，再传会换掉原来的。可以预览和删除</li>
     <li>今日待办左右分成未签约客户和已签约项目</li>
@@ -922,6 +940,7 @@ function copyText(t,e){e&&e.stopPropagation();navigator.clipboard.writeText(t).t
 function toast(msg){const w=document.getElementById('toastWrap');const el=document.createElement('div');el.className='toast success';el.innerHTML=`<span class="dot"></span><span>${esc(msg)}</span>`;w.appendChild(el);setTimeout(()=>{el.style.opacity='0';el.style.transition='opacity .3s';setTimeout(()=>el.remove(),300)},2500);}
 function openModal(id){document.getElementById(id).classList.add('show')}
 function closeModal(id){document.getElementById(id).classList.remove('show')}
+function toggleNavFold(btn){btn.parentElement.classList.toggle('open');}
 function openSidebar(){document.getElementById('sidebar').classList.add('open');document.getElementById('sidebarMask').classList.add('show')}
 function closeSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebarMask').classList.remove('show')}
 
@@ -991,10 +1010,18 @@ function updateChrome(){
     bc.innerHTML=`<span>住家研选</span><span class="sep">/</span><span class="cur">${cur}</span>`;
     tabs.innerHTML=`<div class="tab ${state.view==='home'?'active':''}" onclick="goView('home')">首页看板</div>${state.view==='home'?'':`<div class="tab active">${cur}</div>`}`;
   }
+  const projectOn=state.view==='project'||state.view==='projectDetail'||state.view==='actions'||state.view==='production';
   document.querySelectorAll('.nav-item').forEach(a=>{
     const v=a.dataset.view;
-    a.classList.toggle('active', v===state.view || (state.view==='detail'&&v==='list') || ((state.view==='projectDetail'||state.view==='actions'||state.view==='production')&&v==='project') || ((state.view==='expenses'||state.view==='commission'||state.view==='margin')&&v==='finance') || (state.view==='factories'&&v==='dealers') || (state.view==='accounts'&&v==='rules'));
+    const on=v===state.view || (state.view==='detail'&&v==='list') || (projectOn&&v==='project') || ((state.view==='expenses'||state.view==='commission'||state.view==='margin')&&v==='finance') || (state.view==='factories'&&v==='dealers') || (state.view==='accounts'&&v==='rules');
+    if(a.classList.contains('nav-parent')) a.classList.toggle('on', on);
+    else a.classList.toggle('active', on);
   });
+  document.querySelectorAll('.nav-subitem').forEach(a=>{
+    const v=a.dataset.view;
+    a.classList.toggle('active', v===state.view || (state.view==='projectDetail'&&v==='project'));
+  });
+  if(projectOn) document.querySelectorAll('.nav-fold[data-group="project"]').forEach(g=>g.classList.add('open'));
 }
 function renderList(){
   document.getElementById('mobileSticky').classList.remove('show');

@@ -492,10 +492,6 @@ function receivableSection(p){
     <div class="callout ${cls}">${rec.status}。应收 ${money(rec.amount)}，已收 ${money(rec.got)}，${tail}签字日 ${esc((rec.signedAt||'').slice(0,10)||'—')}。</div>
     ${receiptTable(p)}`;
 }
-function projectSubnav(active){
-  const tabs=[['project','项目'],['actions','待办动作'],['production','生产协同']];
-  return `<div class="submod">${tabs.map(([view,label])=>`<button type="button" class="${active===view?'active':''}" onclick="goView('${view}')">${label}</button>`).join('')}</div>`;
-}
 function renderActions(){
   const filters=['全部','节点判断','平面','深化','复测下单','生产安装','验收'];
   if(!filters.includes(state.actionFilter)) state.actionFilter='全部';
@@ -505,7 +501,6 @@ function renderActions(){
   pageShell(`
     <div class="page-head"><div><h1>待办动作</h1><p>每个项目只显示当前这一步。完成或标不适用之后，下一步才会出现。还要上传文件时，完成按钮不可用。</p></div>
       <button class="btn btn-default" onclick="render()">刷新</button></div>
-    ${projectSubnav('actions')}
     <p class="page-note">设计类步骤记在立项时指定的设计师名下。</p>
     <div class="mini-tabs">${filters.map(k=>`<button class="filter-tab ${state.actionFilter===k?'active':''}" onclick="state.actionFilter='${k}';render()">${k}</button>`).join('')}</div>
     <div class="table-wrap"><table class="data"><thead><tr><th>项目</th><th>动作</th><th>设计师</th><th>状态</th><th>卡点</th><th class="col-ops">操作</th></tr></thead><tbody>
@@ -581,7 +576,6 @@ function renderProduction(){
   });
   pageShell(`
     <div class="page-head"><div><h1>生产协同</h1><p>一个项目可以拆成多包。齐套率是已完工或已到货的包数除以包数。总交期看最慢那个包的预测日。点一家工厂，右边只留这家的包。</p></div></div>
-    ${projectSubnav('production')}
     <div class="kpis">
       <div class="kpi" style="cursor:default"><div class="lab">拆单包</div><div class="val">${packs.length}</div><div class="sub">${names.length} 家工厂</div></div>
       <div class="kpi ${openPack?'watch':''}" style="cursor:default"><div class="lab">还没齐</div><div class="val">${openPack}</div><div class="sub">未完工也未到货</div></div>
@@ -627,9 +621,8 @@ function renderProduction(){
 function renderProjects(){
   const list=CONTRACTS.filter(p=>state.showEnded||(!p.ended&&!p.lost));
   pageShell(`
-    <div class="page-head"><div><h1>项目管理</h1><p>立项之后在这里按 27 个步骤往下走。打开一行是项目详情。</p></div>
+    <div class="page-head"><div><h1>项目</h1><p>立项之后在这里按 27 个步骤往下走。打开一行是项目详情。</p></div>
       <button class="btn btn-primary" onclick="openCreateProject()">立项</button></div>
-    ${projectSubnav('project')}
     <div class="panel"><div class="panel-body">
     <div class="toolbar"><div class="toolbar-left">
       <label class="check-row"><input type="checkbox" ${state.showEnded?'checked':''} onchange="state.showEnded=this.checked;render()" /><span class="check"></span><span class="check-text"><span>看已结束和流失</span></span></label>
