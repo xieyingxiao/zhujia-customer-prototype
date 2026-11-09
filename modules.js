@@ -118,22 +118,28 @@ function clearField(id){const el=document.getElementById(id);if(el)el.classList.
 
 function isUntouched(c){return c.status!=='已流失' && !(c.follows&&c.follows.length) && !(c.contactNote&&String(c.contactNote).trim());}
 function customerSigned(c){return c.status==='已成交' || c.boardStage==='已成交' || CONTRACTS.some(p=>p.customerId===c.id && !p.lost && !p.ended);}
+function daysPast(day){
+  return Math.round((new Date(TODAY)-new Date(String(day).slice(0,10)))/86400000);
+}
 function todayItems(){
   const items=[];
   customers.forEach(c=>{
     if(c.status==='已流失'||c.boardStage==='流失'||customerSigned(c)) return;
-    if(isUntouched(c)) items.push({group:'customer', kind:'未首触', title:c.name, sub:`${c.id} · ${fmtPhone(c.phone)} · ${c.wechat} · ${c.city} · ${c.channel} · ${gradeLabel(c.intent)} · ${c.boardStage}`, detail:'还没有通话，也没有加微信。', owner:c.owner||'老板', view:'detail', id:c.id});
-    if(c.nextFollow && c.nextFollow.slice(0,10)<TODAY) items.push({group:'customer', kind:'逾期跟进', title:c.name, sub:`${c.id} · 下次跟进 ${c.nextFollow}`, detail:'已过约定的跟进时间。', owner:c.owner||'老板', view:'detail', id:c.id});
+    if(isUntouched(c)) items.push({group:'customer', kind:'未首触', title:c.name, sub:`${c.id} · ${fmtPhone(c.phone)} · ${c.wechat} · ${c.city} · ${c.channel} · ${gradeLabel(c.intent)} · ${c.boardStage}`, detail:'还没有通话，也没有加微信。', owner:c.owner||'老板', view:'detail', id:c.id, due:false});
+    if(c.nextFollow && c.nextFollow.slice(0,10)<TODAY) items.push({group:'customer', kind:'待处理', title:c.name, sub:`${c.id} · 下次跟进 ${c.nextFollow}`, detail:`约定 ${c.nextFollow.slice(0,10)}，超了 ${daysPast(c.nextFollow)} 天，还没跟进。`, owner:c.owner||'老板', view:'detail', id:c.id, due:true});
   });
   CONTRACTS.forEach(p=>{
     if(p.ended||p.lost) return;
-    if(p.action && p.action.status!=='已完成'){
-      const cur=currentStep(p);
-      const late=cur&&cur.plan&&cur.plan<TODAY?Math.round((new Date(TODAY)-new Date(cur.plan))/86400000):0;
-      items.push({group:'project', kind:'项目事项', title:`${p.id} ${p.customerName}`, sub:p.action.name, detail:(late?`超了 ${late} 天。`:'')+(p.action.blocker||'当前这一步还没完成。'), owner:p.designer||'—', view:'project', id:p.id});
+    const cur=currentStep(p);
+    if(cur&&cur.plan&&cur.plan<TODAY){
+      items.push({group:'project', kind:'待处理', title:`${p.id} ${p.customerName}`, sub:stepDef(cur.seq).name, detail:`计划 ${cur.plan}，超了 ${daysPast(cur.plan)} 天。`+(p.action&&p.action.blocker?p.action.blocker:''), owner:p.designer||'—', view:'project', id:p.id, due:true});
     }
+    (p.factories||[]).forEach(f=>{
+      if(pkgReady(f)||!f.forecast||f.forecast>=TODAY) return;
+      items.push({group:'project', kind:'待处理', title:`${p.id} ${p.customerName}`, sub:`${f.content} · ${f.name}`, detail:`预测 ${f.forecast} 已过，超了 ${daysPast(f.forecast)} 天，还是${pkgShownStatus(f)}。`, owner:p.designer||'—', view:'project', id:p.id, due:true});
+    });
   });
-  LEDGER.filter(x=>x.unpaid&&x.project).forEach(x=>items.push({group:'project', kind:'待付', title:x.project, sub:`${x.kind} · ${money(x.amount)}`, detail:'这一单还有款没付出。', owner:'财务', view:'finance', id:''}));
+  LEDGER.filter(x=>x.unpaid&&x.project&&x.due&&x.due<TODAY).forEach(x=>items.push({group:'project', kind:'待处理', title:x.project, sub:`${x.kind} · ${money(x.amount)}`, detail:`到期 ${x.due}，超了 ${daysPast(x.due)} 天，还没付出。`, owner:'财务', view:'finance', id:'', due:true}));
   return items;
 }
 function openWork(view, id){if(view==='detail')goDetail(id);else if(view==='project')goProject(id);else goView('finance');}
@@ -142,6 +148,7 @@ function renderHome(){
   const all=todayItems();
   const people=all.filter(t=>t.group==='customer');
   const jobs=all.filter(t=>t.group==='project');
+  const due=all.filter(t=>t.due);
   const s=financeSummary();
   const by=(arr,key)=>Object.entries(arr.reduce((m,x)=>{const k=x[key]||'未定';m[k]=(m[k]||0)+1;return m;},{})).map(([name,n])=>({name,n})).sort((a,b)=>b.n-a.n);
   const high=ruleValue('毛利率偏高线',55);
@@ -157,12 +164,12 @@ function renderHome(){
   const blocked=CONTRACTS.filter(p=>p.action&&String(p.action.blocker||'').indexOf('还要上传')===0).length;
   pageShell(`
     <div class="page-head">
-      <div><h1>首页看板</h1><p>统计截止 ${TODAY}。左边是还没签约的客户，右边是已经立项的项目。点「去处理」进入这个客户或这个项目。没有挂在项目上的日常开支，到财务中心的日常开支里看。</p></div>
+      <div><h1>首页看板</h1><p>统计截止 ${TODAY}。待处理是约定时间已经过了、还没做完。左边是还没签约的客户。右边只放这种超时的已签约项目。点「去处理」进入这个客户或这个项目。没有挂在项目上的日常开支，到财务中心的日常开支里看。</p></div>
       <button class="btn btn-default" onclick="render()">刷新</button>
     </div>
     <div class="kpis">
       <button type="button" class="kpi" onclick="goView('project')"><div class="lab">在途项目</div><div class="val">${s.inFlight}</div><div class="sub">还没到售后</div></button>
-      <button type="button" class="kpi ${all.length?'attn':''}" onclick="document.getElementById('homeToday').scrollIntoView({behavior:'smooth',block:'start'})"><div class="lab">待处理</div><div class="val">${all.length}</div><div class="sub">客户 ${people.length} · 项目 ${jobs.length}</div></button>
+      <button type="button" class="kpi ${due.length?'attn':''}" onclick="document.getElementById('homeToday').scrollIntoView({behavior:'smooth',block:'start'})"><div class="lab">待处理</div><div class="val">${due.length}</div><div class="sub">超时客户 ${due.filter(t=>t.group==='customer').length} · 超时项目 ${due.filter(t=>t.group==='project').length}</div></button>
       <button type="button" class="kpi" onclick="goView('finance')"><div class="lab">本月净额</div><div class="val">${money(s.net)}</div><div class="sub">收入 ${money(s.income)} · 支出 ${money(s.pay)}</div></button>
       <button type="button" class="kpi ${s.due>0?'attn':''}" onclick="goView('finance')"><div class="lab">待收</div><div class="val">${money(s.due)}</div><div class="sub">${s.dueCount} 个已签项目还没收齐</div></button>
     </div>
@@ -172,10 +179,10 @@ function renderHome(){
       <button type="button" class="kpi ${s.unpaidCount?'attn':''}" onclick="goView('finance')"><div class="lab">全款未收齐</div><div class="val">${s.unpaidCount}</div><div class="sub">签完合同还没收完</div></button>
       <button type="button" class="kpi ${blocked?'attn':''}" onclick="goView('actions')"><div class="lab">当前卡点</div><div class="val">${blocked}</div><div class="sub">当前步骤还缺文件 · 待发提成 ${money(s.commission)}</div></button>
     </div>
-    <div id="homeToday" class="block-title">今天要处理 ${all.length} 条</div>
+    <div id="homeToday" class="block-title">待处理 ${due.length} 条</div>
     <div class="today-split">
-      <section class="${paneClass(people)}"><div class="block-title">未签约客户 ${people.length} 条</div>${todayTable(people,'客户')}</section>
-      <section class="${paneClass(jobs)}"><div class="block-title">已签约项目 ${jobs.length} 条</div>${todayTable(jobs,'项目')}</section>
+      <section class="${paneClass(people)}"><div class="block-title">未签约客户 ${people.length} 条</div>${todayTable(people,'客户','这块没有未签约客户要看')}</section>
+      <section class="${paneClass(jobs)}"><div class="block-title">已签约项目 ${jobs.length} 条</div>${todayTable(jobs,'项目','没有计划或交期已经过了、还没做完的项目')}</section>
     </div>
     <div class="grid-2" style="margin-top:16px">
       ${shareRows('渠道占比', by(customers,'channel'))}
@@ -219,8 +226,7 @@ function financeSummary(){
 }
 
 function toneOfItem(t){
-  const d=String(t.detail||'');
-  if(t.kind==='逾期跟进'||t.kind==='待付'||d.indexOf('超了')===0||d.indexOf('还要上传')===0) return 'hot';
+  if(t.due||t.kind==='待处理') return 'hot';
   if(t.kind==='未首触') return 'watch';
   return '';
 }
@@ -245,13 +251,13 @@ function projectTone(p){
   if(p.action&&!(p.factories||[]).length&&p.action.group==='生产安装') return 'watch';
   return '';
 }
-function todayTable(list, who){
+function todayTable(list, who, empty){
   const rows=list.map(t=>{
     const tone=toneOfItem(t);
     return `<tr class="${tone==='hot'?'row-hot':tone==='watch'?'row-watch':''}"><td>${toneMark(t.kind,tone)}</td><td><strong>${esc(t.title)}</strong><div class="project-meta">${esc(t.sub)}</div></td><td>${esc(t.detail)}</td><td>${esc(t.owner)}</td><td class="col-ops"><button class="btn btn-sm btn-primary" onclick="openWork('${t.view}','${t.id}')">去处理</button></td></tr>`;
   }).join('');
   return `<div class="table-wrap"><table class="data"><thead><tr><th>事项</th><th>${who}</th><th>现在的情况</th><th>该谁处理</th><th class="col-ops">操作</th></tr></thead><tbody>
-    ${rows||`<tr><td colspan="5">这块今天没有要处理的</td></tr>`}
+    ${rows||`<tr><td colspan="5">${esc(empty||'这块今天没有要处理的')}</td></tr>`}
   </tbody></table></div><div class="pager"><span class="info">共 ${list.length} 条</span></div>`;
 }
 
