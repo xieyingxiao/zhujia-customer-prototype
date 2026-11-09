@@ -125,8 +125,13 @@ function todayItems(){
   const items=[];
   customers.forEach(c=>{
     if(c.status==='已流失'||c.boardStage==='流失'||customerSigned(c)) return;
-    if(isUntouched(c)) items.push({group:'customer', kind:'未首触', title:c.name, sub:`${c.id} · ${fmtPhone(c.phone)} · ${c.wechat} · ${c.city} · ${c.channel} · ${gradeLabel(c.intent)} · ${c.boardStage}`, detail:'还没有通话，也没有加微信。', owner:c.owner||'老板', view:'detail', id:c.id, due:false});
-    if(c.nextFollow && c.nextFollow.slice(0,10)<TODAY) items.push({group:'customer', kind:'待处理', title:c.name, sub:`${c.id} · 下次跟进 ${c.nextFollow}`, detail:`约定 ${c.nextFollow.slice(0,10)}，超了 ${daysPast(c.nextFollow)} 天，还没跟进。`, owner:c.owner||'老板', view:'detail', id:c.id, due:true});
+    const untouched=isUntouched(c);
+    const followLate=!!(c.nextFollow && c.nextFollow.slice(0,10)<TODAY);
+    if(!untouched && !followLate) return;
+    const bits=[];
+    if(untouched) bits.push('还没有首触，没有通话，也没有加微信。');
+    if(followLate) bits.push(`约定 ${c.nextFollow.slice(0,10)}，超了 ${daysPast(c.nextFollow)} 天，还没跟进。`);
+    items.push({group:'customer', kind:'待处理', title:c.name, sub:`${c.id} · ${fmtPhone(c.phone)} · ${c.wechat} · ${c.city} · ${c.channel} · ${gradeLabel(c.intent)} · ${c.boardStage}`, detail:bits.join(''), owner:c.owner||'老板', view:'detail', id:c.id, due:true});
   });
   CONTRACTS.forEach(p=>{
     if(p.ended||p.lost) return;
@@ -164,7 +169,7 @@ function renderHome(){
   const blocked=CONTRACTS.filter(p=>p.action&&String(p.action.blocker||'').indexOf('还要上传')===0).length;
   pageShell(`
     <div class="page-head">
-      <div><h1>首页看板</h1><p>统计截止 ${TODAY}。待处理是约定时间已经过了、还没做完。左边是还没签约的客户。右边只放这种超时的已签约项目。点「去处理」进入这个客户或这个项目。没有挂在项目上的日常开支，到财务中心的日常开支里看。</p></div>
+      <div><h1>首页看板</h1><p>统计截止 ${TODAY}。待处理包括还没首触，以及约定、计划或交期已经过了还没做完。左边是这种未签约客户，右边只放这种已签约项目。点「去处理」进入这个客户或这个项目。没有挂在项目上的日常开支，到财务中心的日常开支里看。</p></div>
       <button class="btn btn-default" onclick="render()">刷新</button>
     </div>
     <div class="kpis">
