@@ -580,9 +580,29 @@ tr.step-locked td{color:var(--text-muted)}
           <a class="nav-subitem" data-view="production" href="#/production">生产协同</a>
         </div>
       </div>
-      <a class="nav-item" data-view="finance" href="#/finance"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>财务中心</a>
-      <a class="nav-item" data-view="dealers" href="#/dealers"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l2-5h14l2 5M3 9h18v11a1 1 0 01-1 1H4a1 1 0 01-1-1z"/><path d="M9 21v-6h6v6M3 9a3 3 0 006 0 3 3 0 006 0 3 3 0 006 0"/></svg>合作伙伴</a>
-      <a class="nav-item" data-view="rules" href="#/rules"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>系统设置</a>
+      <div class="nav-fold open" data-group="finance">
+        <button type="button" class="nav-item nav-parent" data-view="finance" onclick="toggleNavFold(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>财务中心<svg class="nav-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg></button>
+        <div class="nav-sub">
+          <a class="nav-subitem" data-view="finance" href="#/finance">收支</a>
+          <a class="nav-subitem" data-view="expenses" href="#/expenses">日常开支</a>
+          <a class="nav-subitem" data-view="commission" href="#/commission">内部提成</a>
+          <a class="nav-subitem" data-view="margin" href="#/margin">项目毛利</a>
+        </div>
+      </div>
+      <div class="nav-fold open" data-group="dealers">
+        <button type="button" class="nav-item nav-parent" data-view="dealers" onclick="toggleNavFold(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l2-5h14l2 5M3 9h18v11a1 1 0 01-1 1H4a1 1 0 01-1-1z"/><path d="M9 21v-6h6v6M3 9a3 3 0 006 0 3 3 0 006 0 3 3 0 006 0"/></svg>合作伙伴<svg class="nav-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg></button>
+        <div class="nav-sub">
+          <a class="nav-subitem" data-view="dealers" href="#/dealers">合作伙伴</a>
+          <a class="nav-subitem" data-view="factories" href="#/factories">工厂</a>
+        </div>
+      </div>
+      <div class="nav-fold open" data-group="rules">
+        <button type="button" class="nav-item nav-parent" data-view="rules" onclick="toggleNavFold(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>系统设置<svg class="nav-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg></button>
+        <div class="nav-sub">
+          <a class="nav-subitem" data-view="rules" href="#/rules">规则</a>
+          <a class="nav-subitem" data-view="accounts" href="#/accounts">账号</a>
+        </div>
+      </div>
     </nav>
   </aside>
   <div class="main">
@@ -802,6 +822,7 @@ tr.step-locked td{color:var(--text-muted)}
     <li>还没首触的未签约客户也算待处理。同一个人只占一行，说明里同时写没首触和跟进已过期</li>
     <li>跟进方式选到店时，邀约到店和到店接待一起完成。已经走到预报价的不退回</li>
     <li>项目管理在侧栏展开为项目、待办动作、生产协同。页内不再横排这三个切换</li>
+    <li>财务中心、合作伙伴、系统设置也在侧栏展开。页内不再横排切换</li>
     <li>邀约、到店先弹出确认：到店时间必填；到店还可以填接待方式和接待人。到店写进跟进记录，不再单独列出到店记录</li>
     <li>上传图纸先选类型和文件。一位客户只留一张，再传会换掉原来的。可以预览和删除</li>
     <li>今日待办左右分成未签约客户和已签约项目</li>
@@ -1011,9 +1032,12 @@ function updateChrome(){
     tabs.innerHTML=`<div class="tab ${state.view==='home'?'active':''}" onclick="goView('home')">首页看板</div>${state.view==='home'?'':`<div class="tab active">${cur}</div>`}`;
   }
   const projectOn=state.view==='project'||state.view==='projectDetail'||state.view==='actions'||state.view==='production';
+  const financeOn=state.view==='finance'||financeChild;
+  const partnerOn=state.view==='dealers'||partnerChild;
+  const settingsOn=state.view==='rules'||settingsChild;
   document.querySelectorAll('.nav-item').forEach(a=>{
     const v=a.dataset.view;
-    const on=v===state.view || (state.view==='detail'&&v==='list') || (projectOn&&v==='project') || ((state.view==='expenses'||state.view==='commission'||state.view==='margin')&&v==='finance') || (state.view==='factories'&&v==='dealers') || (state.view==='accounts'&&v==='rules');
+    const on=v===state.view || (state.view==='detail'&&v==='list') || (projectOn&&v==='project') || (financeOn&&v==='finance') || (partnerOn&&v==='dealers') || (settingsOn&&v==='rules');
     if(a.classList.contains('nav-parent')) a.classList.toggle('on', on);
     else a.classList.toggle('active', on);
   });
@@ -1021,7 +1045,10 @@ function updateChrome(){
     const v=a.dataset.view;
     a.classList.toggle('active', v===state.view || (state.view==='projectDetail'&&v==='project'));
   });
-  if(projectOn) document.querySelectorAll('.nav-fold[data-group="project"]').forEach(g=>g.classList.add('open'));
+  const foldOn={project:projectOn, finance:financeOn, dealers:partnerOn, rules:settingsOn};
+  Object.keys(foldOn).forEach(g=>{
+    if(foldOn[g]) document.querySelectorAll('.nav-fold[data-group="'+g+'"]').forEach(el=>el.classList.add('open'));
+  });
 }
 function renderList(){
   document.getElementById('mobileSticky').classList.remove('show');

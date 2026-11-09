@@ -1299,19 +1299,14 @@ function submitProject(){
   toast('已立项 '+id);render();
 }
 
-function financeSubnav(active){
-  const tabs=[['finance','收支'],['expenses','日常开支'],['commission','内部提成'],['margin','项目毛利']];
-  return `<div class="submod">${tabs.map(([view,label])=>`<button type="button" class="${active===view?'active':''}" onclick="goView('${view}')">${label}</button>`).join('')}</div>`;
-}
 function renderFinance(){
   const s=financeSummary();
   const recs=CONTRACTS.map(p=>({p, rec:receivableOf(p)})).filter(x=>x.rec);
   const unsigned=CONTRACTS.filter(p=>!contractSigned(p));
   const arAmount=recs.reduce((sum,x)=>sum+x.rec.amount,0);
   pageShell(`
-    <div class="page-head"><div><h1>财务中心</h1><p>客户签字之后才有应收。签字前收到的钱记成预收，签字当天冲进这笔应收。统计截止 ${TODAY}。</p></div>
+    <div class="page-head"><div><h1>收支</h1><p>客户签字之后才有应收。签字前收到的钱记成预收，签字当天冲进这笔应收。统计截止 ${TODAY}。</p></div>
       <button class="btn btn-primary" onclick="openLedger()">记账</button></div>
-    ${financeSubnav('finance')}
     <div class="kpi-grid">
       <div class="kpi"><div class="n">${money(arAmount)}</div><div class="l">应收总额</div></div>
       <div class="kpi ${s.due>0?'attn':''}"><div class="n">${money(s.due)}</div><div class="l">未收</div></div>
@@ -1345,7 +1340,6 @@ function renderExpenses(){
   pageShell(`
     <div class="page-head"><div><h1>日常开支</h1><p>房租、工资、推广这些不挂在项目上的开支。统计截止 ${TODAY}。</p></div>
       <button class="btn btn-primary" onclick="openExpense()">记下日常开支</button></div>
-    ${financeSubnav('expenses')}
     <div class="kpi-grid">
       <div class="kpi"><div class="n">${EXPENSES.length}</div><div class="l">笔数</div></div>
       <div class="kpi"><div class="n">${money(paid)}</div><div class="l">本月已付</div></div>
@@ -1360,7 +1354,6 @@ function renderCommission(){
   pageShell(`
     <div class="page-head"><div><h1>内部提成</h1><p>设计、销售和项目提成记在这里，不进项目成本。统计截止 ${TODAY}。</p></div>
       <button class="btn btn-primary" onclick="openCommission()">记内部提成</button></div>
-    ${financeSubnav('commission')}
     <div class="kpi-grid">
       <div class="kpi"><div class="n">${COMMISSIONS.length}</div><div class="l">笔数</div></div>
       <div class="kpi ${pending.length?'watch':''}"><div class="n">${money(pending.reduce((s,c)=>s+c.amount,0))}</div><div class="l">待发</div></div>
@@ -1383,7 +1376,6 @@ function renderMargin(){
   });
   pageShell(`
     <div class="page-head"><div><h1>项目毛利</h1><p>只算已经签字的项目。毛利率 =（订单总额 − 成本）÷ 订单总额。统计截止 ${TODAY}。</p></div></div>
-    ${financeSubnav('margin')}
     <p class="page-note">低于 ${low}% 标红，高于 ${high}% 写成本可能没录全。成本只计项目付款里勾了计入成本的金额。</p>
     <div class="table-wrap"><table class="data"><thead><tr><th>项目</th><th>客户</th><th>阶段</th><th>订单总额</th><th>成本</th><th>毛利</th><th>毛利率</th><th>说明</th></tr></thead><tbody>
       ${margins.map(m=>`<tr class="${m.cls==='margin-bad'?'row-hot':m.cls==='margin-warn'?'row-watch':''}" onclick="goProject('${m.p.id}')"><td>${esc(m.p.id)}</td><td>${esc(m.p.customerName)}</td><td>${esc(m.p.stage)}</td><td>${money(m.p.amount)}</td><td>${money(m.cost)}</td><td>${money(m.p.amount-m.cost)}</td><td class="${m.cls}">${m.rate.toFixed(2)}%</td><td>${esc(m.note||'—')}</td></tr>`).join('')||'<tr><td colspan="8">还没有可算毛利率的项目</td></tr>'}
@@ -1468,14 +1460,9 @@ function shareRows(title, rows){
   return `<div class="panel"><div class="panel-hd"><h3>${esc(title)}</h3><span class="meta">共 ${rows.reduce((s,r)=>s+r.n,0)}</span></div><div style="padding:4px 16px 12px">${bars||'<div class="empty-inline">暂无</div>'}</div></div>`;
 }
 
-function settingsSubnav(active){
-  const tabs=[['rules','规则'],['accounts','账号']];
-  return `<div class="submod">${tabs.map(([view,label])=>`<button type="button" class="${active===view?'active':''}" onclick="goView('${view}')">${label}</button>`).join('')}</div>`;
-}
 function renderRules(){
   pageShell(`
     <div class="page-head"><div><h1>规则</h1><p>当前岗位 负责人。财务只能看。修改必须填原因。停用后这条规则不再参与计算。</p></div></div>
-    ${settingsSubnav('rules')}
     <div class="table-wrap"><table class="data"><thead><tr><th>规则</th><th>当前值</th><th class="col-ops">操作</th></tr></thead><tbody>
       ${RULES.map((r,i)=>`<tr class="${r.enabled?'':'rule-off'}"><td>${esc(r.name)}</td><td>${esc(r.value)}${r.enabled?'':' · 已停用'}</td><td><div class="ops"><button class="btn btn-sm btn-default" onclick="editRule(${i})">编辑</button><button class="btn btn-sm btn-default" onclick="toggleRule(${i})">${r.enabled?'停用':'启用'}</button></div></td></tr>`).join('')}
     </tbody></table></div>
@@ -1485,7 +1472,6 @@ function renderAccounts(){
   pageShell(`
     <div class="page-head"><div><h1>账号</h1><p>点编辑可以改姓名、密码和能进入的板块。密码留空表示不改。推荐板块按岗位给出，可以再改。没勾的菜单不出现。负责人始终是全部板块。</p></div>
       <button class="btn btn-primary" onclick="editAccount(-1)">新增账号</button></div>
-    ${settingsSubnav('accounts')}
     <div class="table-wrap"><table class="data"><thead><tr><th>账号</th><th>姓名</th><th>岗位</th><th>状态</th><th>板块</th><th class="col-ops">操作</th></tr></thead><tbody>
       ${ACCOUNTS.map((a,i)=>`<tr><td>${esc(a.account)}</td><td>${esc(a.name)}</td><td>${esc(a.role)}</td><td>${esc(a.status)}</td><td>${esc(a.modules)}</td><td><div class="ops"><button class="btn btn-sm btn-default" onclick="editAccount(${i})">编辑</button>${a.locked?'':`<button class="btn btn-sm btn-default" onclick="deleteAccount(${i})">删除</button>`}</div></td></tr>`).join('')}
     </tbody></table></div>
@@ -1543,10 +1529,6 @@ function fillRoleModules(role){
 function deleteAccount(i){const a=ACCOUNTS[i];if(a.locked)return;ACCOUNTS.splice(i,1);toast('已删除 '+a.name);render();}
 
 function dealerUsers(name){return customers.filter(c=>(c.dealers||[]).includes(name));}
-function partnerSubnav(active){
-  const tabs=[['dealers','合作伙伴'],['factories','工厂']];
-  return `<div class="submod">${tabs.map(([view,label])=>`<button type="button" class="${active===view?'active':''}" onclick="goView('${view}')">${label}</button>`).join('')}</div>`;
-}
 function factoryPacks(f){
   const rows=[];
   CONTRACTS.forEach(p=>(p.factories||[]).forEach(x=>{
@@ -1564,7 +1546,6 @@ function renderDealers(){
   pageShell(`
     <div class="page-head"><div><h1>合作伙伴</h1><p>分发客户时从这里选。停用后分发列表不再出现，已经分出去的客户仍保留这家名字。</p></div>
       <button class="btn btn-primary" onclick="openDealer()">添加合作伙伴</button></div>
-    ${partnerSubnav('dealers')}
     <div class="toolbar"><div class="toolbar-right" style="margin-left:0"><div class="search-box ${q?'has-value':''}"><svg class="ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg><input placeholder="名称、城市、联系人或电话" value="${esc(q)}" oninput="state.dealerQ=this.value;render()" /><button class="clear" onclick="state.dealerQ='';render()" aria-label="清除">${iconClose()}</button></div></div></div>
     <div class="table-wrap"><table class="data"><thead><tr><th>名称</th><th>城市</th><th>联系人</th><th>电话</th><th>已分发</th><th>状态</th><th class="col-ops">操作</th></tr></thead><tbody>${rows||`<tr><td colspan="7">${q?'没有匹配的合作伙伴':'还没有合作伙伴，点「添加合作伙伴」建第一家。'}</td></tr>`}</tbody></table></div>
     <p class="page-note" style="margin-top:12px">共 ${list.length} 家</p>
@@ -1649,7 +1630,6 @@ function renderFactories(){
   pageShell(`
     <div class="page-head"><div><h1>工厂</h1><p>拆单包时从这里选。停用后不能再新选，已经拆出去的包仍保留这家名字。</p></div>
       <button class="btn btn-primary" onclick="openPlant()">添加工厂</button></div>
-    ${partnerSubnav('factories')}
     <div class="toolbar"><div class="toolbar-right" style="margin-left:0"><div class="search-box ${view.q?'has-value':''}"><svg class="ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg><input id="factoryQ" placeholder="名称、城市、品类、联系人或电话" value="${esc(view.q)}" oncompositionstart="this.dataset.composing='1'" oncompositionend="this.dataset.composing='';onFactoryQ(this)" oninput="onFactoryQ(this,event)" /><button class="clear" onclick="state.factoryQ='';render()" aria-label="清除">${iconClose()}</button></div></div></div>
     <div class="table-wrap"><table class="data"><thead><tr><th>名称</th><th>城市</th><th>可做品类</th><th>联系人</th><th>电话</th><th>已拆包</th><th>状态</th><th class="col-ops">操作</th></tr></thead><tbody id="factoryRows">${view.html}</tbody></table></div>
     <p class="page-note" id="factoryCount" style="margin-top:12px">共 ${view.list.length} 家。拆包时，可做当前品类的工厂排在前面。</p>
